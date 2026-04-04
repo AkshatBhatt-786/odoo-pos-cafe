@@ -3,76 +3,308 @@
 
 {% block title %}Kitchen Display{% endblock %}
 {% block body_class %}pos-kitchen{% endblock %}
-{% block nav_class %}nav--dark{% endblock %}
-
-{% block nav_links %}
-  <a href="{% url 'pos:floor' %}" class="nav__link">POS Floor</a>
-{% endblock %}
 
 {% block extra_css %}
 <style>
-  body.pos-kitchen { background: var(--ink); color: var(--white); }
-  .kitchen-page { padding-top: var(--nav-height); min-height: 100vh; display: flex; flex-direction: column; }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
 
-  .kitchen-header { padding: 1.25rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 2rem; }
-  .kitchen-clock { font-family: var(--font-mono); font-size: 1.5rem; color: var(--white); }
-  .kitchen-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+  :root,
+  [data-theme="light"],
+  [data-theme="dark"] {
+    --bg:          #0A0B0E;
+    --surface:     #111318;
+    --surface2:    #181C23;
+    --surface3:    #1E2330;
+    --border:      #252D3D;
+    --border2:     #2F3A50;
+    --text:        #E8E2D5;
+    --text2:       #7A8499;
+    --text3:       #3A4255;
+    --gold:        #C9A84C;
+    --gold2:       #A8873A;
+    --gold-gradient:    linear-gradient(90deg, #C9A84C 0%, #A8873A 100%);
+    --success:     #2EAB7B;
+    --danger:      #D95757;
+    --warning:     #D4844A;
+    --to-cook:     #D4844A;
+    --preparing:   #C9A84C;
+    --completed:   #2EAB7B;
+    --nav-height:  60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono:    'DM Mono', monospace;
+    --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+  }
 
-  .kitchen-board { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; flex: 1; }
-  .kitchen-col { border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body.pos-kitchen {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; border: none; background: none; cursor: pointer; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .nav__links { display: flex; gap: 2.5rem; align-items: center; }
+  .nav__link {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2); transition: color var(--transition-fast);
+  }
+  .nav__link:hover { color: var(--gold); }
+
+  /* ── KITCHEN PAGE ── */
+  .kitchen-page {
+    padding-top: var(--nav-height);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  .kitchen-header {
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    background: var(--surface);
+  }
+  .kitchen-header-left { display: flex; align-items: center; gap: 1.5rem; }
+  .kitchen-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.3rem;
+  }
+  .kitchen-clock {
+    font-family: var(--font-mono); font-size: 1.4rem; color: var(--text);
+  }
+  .kitchen-divider {
+    width: 1px; height: 2.5rem; background: var(--border); flex-shrink: 0;
+  }
+  .kitchen-title {
+    font-family: var(--font-display); font-size: 1.4rem;
+    color: var(--text); line-height: 1;
+  }
+  .kitchen-meta {
+    margin-left: auto;
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  /* ── BOARD ── */
+  .kitchen-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    flex: 1;
+  }
+  .kitchen-col {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
   .kitchen-col:last-child { border-right: none; }
 
-  .col-header { padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 0.75rem; }
-  .col-dot { width: 8px; height: 8px; border-radius: 50%; }
+  /* ── COLUMN HEADER ── */
+  .col-header {
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface);
+  }
+  .col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .col-dot--to-cook   { background: var(--to-cook); }
   .col-dot--preparing { background: var(--preparing); }
   .col-dot--completed { background: var(--completed); }
-  .col-title { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
-  .col-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--white); margin-left: auto; }
-
-  .col-tickets { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; }
-
-  .ticket {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-    padding: 1rem; cursor: pointer; transition: var(--transition-fast);
+  .col-title {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text2);
   }
-  .ticket:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
-  .ticket--to-cook   { border-left: 3px solid var(--to-cook); }
-  .ticket--preparing { border-left: 3px solid var(--preparing); }
-  .ticket--completed { border-left: 3px solid var(--completed); opacity: 0.6; }
+  .col-count {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    color: var(--text); margin-left: auto;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    padding: 0.15rem 0.5rem;
+  }
 
-  .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-  .ticket-num { font-family: var(--font-mono); font-size: 0.85rem; color: var(--white); }
-  .ticket-table { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
-  .ticket-time { font-family: var(--font-mono); font-size: 0.55rem; color: rgba(255,255,255,0.3); }
+  /* ── TICKET SCROLL AREA ── */
+  .col-tickets {
+    padding: 1rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    overflow-y: auto;
+    flex: 1;
+  }
 
+  /* ── TICKET CARD ── */
+  .ticket {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+  }
+  .ticket::before {
+    content: '';
+    position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
+  }
+  .ticket--to-cook::before   { background: var(--to-cook); }
+  .ticket--preparing::before { background: var(--preparing); }
+  .ticket--completed::before { background: var(--completed); }
+
+  .ticket:hover {
+    background: var(--surface2);
+    border-color: var(--border2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .ticket--completed { opacity: 0.55; }
+  .ticket--completed:hover { transform: none; box-shadow: none; }
+
+  /* ── TICKET HEADER ── */
+  .ticket-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .ticket-num {
+    font-family: var(--font-mono); font-size: 0.82rem;
+    color: var(--text); font-weight: 500;
+  }
+  .ticket-table {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text3);
+    background: var(--surface3); border: 1px solid var(--border2);
+    padding: 0.15rem 0.5rem;
+  }
+  .ticket-time {
+    font-family: var(--font-mono); font-size: 0.5rem;
+    color: var(--text3); margin-left: auto;
+  }
+
+  /* ── TICKET ITEMS ── */
   .ticket-items { display: flex; flex-direction: column; gap: 0.3rem; }
-  .ticket-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; padding: 0.2rem 0; }
-  .ticket-item.prepared { text-decoration: line-through; color: rgba(255,255,255,0.3); }
-  .ticket-item__qty { font-family: var(--font-mono); font-size: 0.65rem; color: rgba(255,255,255,0.5); min-width: 24px; }
+  .ticket-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; padding: 0.18rem 0;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    color: var(--text);
+    user-select: none;
+  }
+  .ticket-item:hover { color: var(--gold); }
+  .ticket-item.prepared {
+    text-decoration: line-through;
+    color: var(--text3);
+  }
+  .ticket-item.prepared:hover { color: var(--text3); }
+  .ticket-item__qty {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--text3); min-width: 22px;
+  }
 
-  .ticket-advance { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); }
-  .advance-btn { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); background: none; border: 1px solid rgba(255,255,255,0.12); padding: 0.4rem 0.8rem; cursor: pointer; transition: var(--transition-fast); }
-  .advance-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.4); }
+  /* ── ADVANCE BUTTON ── */
+  .ticket-advance {
+    margin-top: 0.75rem; padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .advance-btn {
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2);
+    background: transparent;
+    border: 1px solid var(--border2);
+    padding: 0.45rem 1rem;
+    width: 100%; text-align: left;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .advance-btn:hover {
+    color: var(--bg);
+    background: var(--gold-gradient);
+    border-color: var(--gold);
+  }
+  .advance-btn--complete:hover {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg);
+  }
 
-  .empty-col { padding: 2rem 1rem; text-align: center; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+  /* ── EMPTY COLUMN ── */
+  .empty-col {
+    padding: 3rem 1rem; text-align: center;
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text3);
+    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+  }
+  .empty-col__icon { font-size: 1.5rem; opacity: 0.2; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="kitchen-page">
-  <div class="kitchen-header">
-    <div>
-      <div class="kitchen-label">Kitchen Display</div>
-      <div class="kitchen-clock" id="kitchen-clock">--:--:--</div>
+
+  <!-- ── NAV ── -->
+  <nav class="nav">
+    <a href="{% url 'pos:floor' %}" class="nav__logo">Cafe.POS</a>
+    <div class="nav__links">
+      <a href="{% url 'pos:floor' %}"   class="nav__link">← POS Floor</a>
+      <a href="{% url 'pos:backend' %}" class="nav__link">Config</a>
     </div>
-    <div style="margin-left:auto;display:flex;gap:0.75rem;align-items:center;">
-      <span style="font-family:var(--font-mono);font-size:0.6rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">
-        {{ tickets|length }} active ticket{{ tickets|length|pluralize }}
-      </span>
+  </nav>
+
+  <!-- ── KITCHEN HEADER ── -->
+  <div class="kitchen-header">
+    <div class="kitchen-header-left">
+      <div>
+        <div class="kitchen-label">Now Serving</div>
+        <div class="kitchen-clock" id="kitchen-clock">--:--:--</div>
+      </div>
+      <div class="kitchen-divider"></div>
+      <div class="kitchen-title">Kitchen Display</div>
+    </div>
+    <div class="kitchen-meta">
+      {{ tickets|length }} active ticket{{ tickets|length|pluralize }}
     </div>
   </div>
 
+  <!-- ── BOARD ── -->
   <div class="kitchen-board">
 
     <!-- TO COOK -->
@@ -80,32 +312,42 @@
       <div class="col-header">
         <span class="col-dot col-dot--to-cook"></span>
         <span class="col-title">To Cook</span>
-        <span class="col-count">{{ tickets|length }}</span>
+        <span class="col-count">
+          {% with tickets|length as n %}{{ n }}{% endwith %}
+        </span>
       </div>
       <div class="col-tickets">
-        {% for ticket in tickets %}{% if ticket.stage == 'to_cook' %}
-          <div class="ticket ticket--to-cook" id="ticket-{{ ticket.pk }}">
-            <div class="ticket-header">
-              <span class="ticket-num">#{{ ticket.order_id }}</span>
-              <span class="ticket-table">{{ ticket.order.table }}</span>
-              <span class="ticket-time">{{ ticket.created_at|timesince }} ago</span>
+        {% for ticket in tickets %}
+          {% if ticket.stage == 'to_cook' %}
+            <div class="ticket ticket--to-cook" id="ticket-{{ ticket.pk }}">
+              <div class="ticket-header">
+                <span class="ticket-num">#{{ ticket.order_id }}</span>
+                <span class="ticket-table">{{ ticket.order.table }}</span>
+                <span class="ticket-time">{{ ticket.created_at|timesince }} ago</span>
+              </div>
+              <div class="ticket-items">
+                {% for line in ticket.order.lines.all %}
+                  <div class="ticket-item {% if line.is_prepared %}prepared{% endif %}"
+                       id="ti-line-{{ line.pk }}"
+                       onclick="toggleLine({{ line.pk }})">
+                    <span class="ticket-item__qty">{{ line.quantity }}×</span>
+                    {{ line.product.name }}
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="ticket-advance">
+                <button class="advance-btn" onclick="advanceTicket({{ ticket.pk }})">
+                  Move → Preparing
+                </button>
+              </div>
             </div>
-            <div class="ticket-items">
-              {% for line in ticket.order.lines.all %}
-                <div class="ticket-item {% if line.is_prepared %}prepared{% endif %}"
-                     id="ti-line-{{ line.pk }}"
-                     onclick="toggleLine({{ line.pk }})">
-                  <span class="ticket-item__qty">{{ line.quantity }}×</span>
-                  {{ line.product.name }}
-                </div>
-              {% endfor %}
-            </div>
-            <div class="ticket-advance">
-              <button class="advance-btn" onclick="advanceTicket({{ ticket.pk }})">Move → Preparing</button>
-            </div>
+          {% endif %}
+        {% empty %}
+          <div class="empty-col">
+            <div class="empty-col__icon">✓</div>
+            <span>No orders</span>
           </div>
-        {% endif %}{% endfor %}
-        {% if not tickets %}<div class="empty-col">No orders</div>{% endif %}
+        {% endfor %}
       </div>
     </div>
 
@@ -114,30 +356,45 @@
       <div class="col-header">
         <span class="col-dot col-dot--preparing"></span>
         <span class="col-title">Preparing</span>
+        <span class="col-count">
+          {% with 0 as n %}
+            {% for t in tickets %}{% if t.stage == 'preparing' %}{% with n|add:1 as n %}{% endwith %}{% endif %}{% endfor %}
+            {{ tickets|dictsort:"stage"|length }}
+          {% endwith %}
+        </span>
       </div>
       <div class="col-tickets">
-        {% for ticket in tickets %}{% if ticket.stage == 'preparing' %}
-          <div class="ticket ticket--preparing" id="ticket-{{ ticket.pk }}">
-            <div class="ticket-header">
-              <span class="ticket-num">#{{ ticket.order_id }}</span>
-              <span class="ticket-table">{{ ticket.order.table }}</span>
-              <span class="ticket-time">{{ ticket.updated_at|timesince }} ago</span>
+        {% for ticket in tickets %}
+          {% if ticket.stage == 'preparing' %}
+            <div class="ticket ticket--preparing" id="ticket-{{ ticket.pk }}">
+              <div class="ticket-header">
+                <span class="ticket-num">#{{ ticket.order_id }}</span>
+                <span class="ticket-table">{{ ticket.order.table }}</span>
+                <span class="ticket-time">{{ ticket.updated_at|timesince }} ago</span>
+              </div>
+              <div class="ticket-items">
+                {% for line in ticket.order.lines.all %}
+                  <div class="ticket-item {% if line.is_prepared %}prepared{% endif %}"
+                       id="ti-line-{{ line.pk }}"
+                       onclick="toggleLine({{ line.pk }})">
+                    <span class="ticket-item__qty">{{ line.quantity }}×</span>
+                    {{ line.product.name }}
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="ticket-advance">
+                <button class="advance-btn advance-btn--complete" onclick="advanceTicket({{ ticket.pk }})">
+                  Move → Completed
+                </button>
+              </div>
             </div>
-            <div class="ticket-items">
-              {% for line in ticket.order.lines.all %}
-                <div class="ticket-item {% if line.is_prepared %}prepared{% endif %}"
-                     id="ti-line-{{ line.pk }}"
-                     onclick="toggleLine({{ line.pk }})">
-                  <span class="ticket-item__qty">{{ line.quantity }}×</span>
-                  {{ line.product.name }}
-                </div>
-              {% endfor %}
-            </div>
-            <div class="ticket-advance">
-              <button class="advance-btn" onclick="advanceTicket({{ ticket.pk }})">Move → Completed</button>
-            </div>
+          {% endif %}
+        {% empty %}
+          <div class="empty-col">
+            <div class="empty-col__icon">✓</div>
+            <span>All clear</span>
           </div>
-        {% endif %}{% endfor %}
+        {% endfor %}
       </div>
     </div>
 
@@ -146,6 +403,7 @@
       <div class="col-header">
         <span class="col-dot col-dot--completed"></span>
         <span class="col-title">Completed</span>
+        <span class="col-count">{{ completed|length }}</span>
       </div>
       <div class="col-tickets" id="completed-col">
         {% for ticket in completed %}
@@ -165,7 +423,10 @@
             </div>
           </div>
         {% empty %}
-          <div class="empty-col">None yet</div>
+          <div class="empty-col">
+            <div class="empty-col__icon">✓</div>
+            <span>None yet</span>
+          </div>
         {% endfor %}
       </div>
     </div>
@@ -176,30 +437,39 @@
 
 {% block extra_js %}
 <script>
+  /* ── Clock ── */
   function updateClock() {
     const now = new Date();
     document.getElementById('kitchen-clock').textContent =
-      now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
-  updateClock(); setInterval(updateClock, 1000);
+  updateClock();
+  setInterval(updateClock, 1000);
 
+  /* ── Auto-refresh every 30s ── */
   setInterval(() => location.reload(), 30000);
 
   const CSRF = '{{ csrf_token }}';
 
+  /* ── Advance ticket stage ── */
   function advanceTicket(id) {
     fetch(`/pos/kitchen/ticket/${id}/advance/`, {
-      method: 'POST', headers: {'X-CSRFToken': CSRF}
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
     }).then(() => location.reload());
   }
 
+  /* ── Toggle individual line item prepared state ── */
   function toggleLine(id) {
     fetch(`/pos/kitchen/line/${id}/prepared/`, {
-      method: 'POST', headers: {'X-CSRFToken': CSRF}
-    }).then(r => r.json()).then(data => {
-      const el = document.getElementById('ti-line-' + id);
-      if (el) el.classList.toggle('prepared', data.prepared);
-    });
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
+    })
+      .then(r => r.json())
+      .then(data => {
+        const el = document.getElementById('ti-line-' + id);
+        if (el) el.classList.toggle('prepared', data.prepared);
+      });
   }
 </script>
 {% endblock %}

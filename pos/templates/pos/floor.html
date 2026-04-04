@@ -1,102 +1,382 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Floor View — Odoo.POS{% endblock %}
+{% block title %}Floor View — Cafe.POS{% endblock %}
 {% block body_class %}pos-floor{% endblock %}
-{% block nav_class %}nav--pos{% endblock %}
-
-{% block nav_links %}
-  <a href="{% url 'pos:floor' %}"   class="nav__link active">Floor</a>
-  <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
-  <a href="{% url 'pos:backend' %}" class="nav__link">Config</a>
-  <a href="{% url 'pos:reports' %}" class="nav__link">Reports</a>
-{% endblock %}
 
 {% block extra_css %}
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
+
+  :root,
+  [data-theme="light"],
+  [data-theme="dark"] {
+    --bg:          #0A0B0E;
+    --surface:     #111318;
+    --surface2:    #181C23;
+    --surface3:    #1E2330;
+    --border:      #252D3D;
+    --border2:     #2F3A50;
+    --text:        #E8E2D5;
+    --text2:       #7A8499;
+    --text3:       #3A4255;
+    --gold:        #C9A84C;
+    --gold2:       #A8873A;
+    --gold-gradient:    linear-gradient(90deg, #C9A84C 0%, #A8873A 100%);
+    --success:     #2EAB7B;
+    --success-muted: #2EAB7B18;
+    --danger:      #D95757;
+    --warning:     #D4844A;
+    --nav-height:  60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono:    'DM Mono', monospace;
+    --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body.pos-floor {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    cursor: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; border: none; background: none; cursor: none; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* ── CURSOR ── */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s ease, opacity 0.2s, background 0.3s;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+    transition: width 0.2s var(--ease-out), height 0.2s var(--ease-out), opacity 0.2s;
+  }
+  body.cursor-hover .cursor-ring { width: 52px; height: 52px; opacity: 0.25; }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .nav__links { display: flex; gap: 2.5rem; align-items: center; }
+  .nav__link {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2); transition: color var(--transition-fast);
+  }
+  .nav__link:hover { color: var(--gold); }
+  .nav__link.active { color: var(--gold); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.65rem 1.25rem;
+    border: 1px solid transparent;
+    transition: all var(--transition-base);
+    cursor: none; white-space: nowrap;
+  }
+  .btn--primary {
+    background: var(--gold-gradient);
+    color: var(--bg); border-color: var(--gold); font-weight: 500;
+  }
+  .btn--primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn--outline {
+    background: transparent; color: var(--text2); border-color: var(--border2);
+  }
+  .btn--outline:hover { border-color: var(--gold); color: var(--gold); }
+  .btn--danger {
+    background: transparent; color: var(--danger); border-color: var(--danger); opacity: 0.7;
+  }
+  .btn--danger:hover { opacity: 1; background: var(--danger); color: var(--bg); }
+
+  /* ── PAGE ── */
   .floor-page {
-    padding-top: calc(var(--nav-height) + 2rem);
-    padding-bottom: 4rem;
+    padding-top: var(--nav-height);
     min-height: 100vh;
+    display: flex; flex-direction: column;
   }
+
+  /* ── PAGE HEADER ── */
   .floor-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    padding: 0 2.5rem 2rem;
-    border-bottom: 1px solid var(--sand-dark);
-    margin-bottom: 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.5rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
   }
-  .floor-title { font-family: var(--font-display); font-size: 2rem; }
-  .floor-meta  { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 0.25rem; }
+  .floor-header-left { display: flex; align-items: center; gap: 1.5rem; }
+  .floor-header-divider { width: 1px; height: 2.5rem; background: var(--border); flex-shrink: 0; }
+  .floor-title {
+    font-family: var(--font-display); font-size: 1.6rem;
+    color: var(--text); line-height: 1;
+  }
+  .floor-meta {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text3); margin-top: 0.25rem;
+  }
   .floor-actions { display: flex; gap: 0.75rem; align-items: center; }
 
+  /* ── FLOOR TABS ── */
   .floor-tabs {
-    display: flex; gap: 0; padding: 0 2.5rem; margin-bottom: 2rem;
-    border-bottom: 1px solid var(--sand-dark);
+    display: flex; gap: 0;
+    padding: 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
   }
   .floor-tab {
-    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.16em;
-    text-transform: uppercase; padding: 0.75rem 1.5rem; cursor: pointer;
-    border: none; background: none; color: var(--muted);
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 0.85rem 1.5rem;
+    cursor: none; border: none; background: none;
+    color: var(--text2);
     border-bottom: 2px solid transparent; margin-bottom: -1px;
-    transition: var(--transition-fast);
+    transition: all var(--transition-fast);
   }
-  .floor-tab.active { color: var(--ink); border-color: var(--ink); }
+  .floor-tab:hover { color: var(--text); }
+  .floor-tab.active { color: var(--gold); border-color: var(--gold); }
 
+  /* ── FLOOR PANEL ── */
+  .floor-panel { padding: 2rem 2.5rem; flex: 1; }
+
+  /* ── TABLE GRID ── */
   .floor-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
     gap: 1rem;
-    padding: 0 2.5rem;
   }
 
+  /* ── TABLE CARD ── */
   .table-card {
     aspect-ratio: 1;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 0.5rem;
-    background: var(--cream);
-    border: 1px solid var(--sand-dark);
-    text-decoration: none; color: var(--ink);
-    transition: var(--transition-base);
-    cursor: pointer; position: relative;
+    gap: 0.4rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    text-decoration: none; color: var(--text);
+    transition: all var(--transition-base);
+    cursor: none; position: relative;
+    overflow: hidden;
   }
-  .table-card:hover { background: var(--sand-light); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,26,24,0.1); }
-  .table-card.occupied { background: var(--ink); color: var(--white); border-color: var(--ink); }
-  .table-card.occupied:hover { background: var(--ink-soft); }
-  .table-card__num  { font-family: var(--font-display); font-size: 2rem; line-height: 1; }
-  .table-card__label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-  .table-card.occupied .table-card__label { color: rgba(255,255,255,0.5); }
-  .table-card__seats { position: absolute; top: 0.5rem; right: 0.6rem; font-family: var(--font-mono); font-size: 0.55rem; color: var(--muted); }
-  .table-card.occupied .table-card__seats { color: rgba(255,255,255,0.4); }
+  .table-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition-base);
+  }
+  .table-card:hover {
+    background: var(--surface2);
+    border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .table-card:hover::after { transform: scaleX(1); }
 
-  .legend { display: flex; gap: 1.5rem; padding: 1.5rem 2.5rem 0; }
-  .legend-item { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-  .legend-dot { width: 10px; height: 10px; border: 1px solid; }
-  .legend-dot--available { background: var(--cream); border-color: var(--sand-dark); }
-  .legend-dot--occupied  { background: var(--ink);  border-color: var(--ink); }
+  /* Occupied state */
+  .table-card.occupied {
+    background: var(--surface2);
+    border-color: var(--gold);
+    border-left: 3px solid var(--gold);
+  }
+  .table-card.occupied::after { transform: scaleX(1); }
+  .table-card.occupied:hover { border-color: var(--gold2); box-shadow: 0 8px 32px rgba(201,168,76,0.15); }
+
+  /* Reserved state */
+  .table-card.reserved {
+    background: var(--surface);
+    border-color: var(--border2);
+    border-left: 3px solid var(--text3);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .table-card__seats {
+    position: absolute; top: 0.6rem; right: 0.7rem;
+    font-family: var(--font-mono); font-size: 0.5rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text3);
+  }
+  .table-card.occupied .table-card__seats { color: var(--gold2); }
+
+  .table-card__num {
+    font-family: var(--font-display); font-size: 2.2rem; line-height: 1;
+    color: var(--text);
+  }
+  .table-card.occupied .table-card__num { color: var(--gold); }
+
+  .table-card__label {
+    font-family: var(--font-mono); font-size: 0.54rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text3);
+  }
+  .table-card.occupied .table-card__label { color: var(--text2); }
+
+  /* Order total badge for occupied tables */
+  .table-card__total {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: var(--gold); letter-spacing: 0.04em;
+  }
+
+  /* ── LEGEND ── */
+  .floor-legend {
+    display: flex; gap: 1.5rem;
+    padding: 1.25rem 2.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
+  }
+  .legend-dot {
+    width: 10px; height: 10px; flex-shrink: 0;
+  }
+  .legend-dot--available { background: var(--surface); border: 1px solid var(--border2); }
+  .legend-dot--occupied  { background: var(--surface2); border: 1px solid var(--gold); border-left: 3px solid var(--gold); }
+  .legend-dot--reserved  { background: var(--surface); border: 1px solid var(--border2); border-left: 3px solid var(--text3); opacity: 0.5; }
+
+  /* ── EMPTY STATE ── */
+  .floor-empty {
+    padding: 4rem 0; text-align: center;
+    grid-column: 1 / -1;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3);
+  }
+  .floor-empty a { color: var(--gold); border-bottom: 1px solid var(--gold2); }
+
+  /* ── STATS BAR ── */
+  .floor-stats {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .floor-stat {
+    flex: 1; padding: 0.85rem 1.5rem;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 0.2rem;
+  }
+  .floor-stat:last-child { border-right: none; }
+  .floor-stat__label {
+    font-family: var(--font-mono); font-size: 0.5rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text3);
+  }
+  .floor-stat__val {
+    font-family: var(--font-mono); font-size: 1rem; color: var(--text);
+  }
+  .floor-stat__val--gold { color: var(--gold); }
+  .floor-stat__val--success { color: var(--success); }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- ── Custom Cursor ── -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="{% url 'pos:floor' %}" class="nav__logo">Cafe.POS</a>
+  <div class="nav__links">
+    <a href="{% url 'pos:floor' %}"   class="nav__link active">Floor</a>
+    <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
+    <a href="{% url 'pos:backend' %}" class="nav__link">Config</a>
+    <a href="{% url 'pos:reports' %}" class="nav__link">Reports</a>
+  </div>
+</nav>
+
 <div class="floor-page">
+
+  <!-- ── PAGE HEADER ── -->
   <div class="floor-header">
-    <div>
-      <div class="floor-title">Floor View</div>
-      <div class="floor-meta">Session #{{ session.id }} · {{ session.opened_at|date:"H:i" }} · {{ request.user.get_full_name|default:request.user.username }}</div>
+    <div class="floor-header-left">
+      <div>
+        <div class="floor-title">Floor View</div>
+        <div class="floor-meta">
+          Session #{{ session.id }} &middot; {{ session.opened_at|date:"H:i" }} &middot; {{ request.user.get_full_name|default:request.user.username }}
+        </div>
+      </div>
+      <div class="floor-header-divider"></div>
     </div>
     <div class="floor-actions">
-      <a href="{% url 'pos:reports' %}" class="btn btn--sm btn--outline">Reports</a>
-      <a href="{% url 'pos:backend' %}" class="btn btn--sm btn--outline">Config</a>
+      <a href="{% url 'pos:reports' %}" class="btn btn--outline">Reports</a>
+      <a href="{% url 'pos:backend' %}" class="btn btn--outline">Config</a>
       <form method="post" action="{% url 'pos:close_session' %}" style="display:inline;">
         {% csrf_token %}
-        <button class="btn btn--sm btn--danger" onclick="return confirm('Close session?')">Close Session</button>
+        <button type="submit" class="btn btn--danger"
+                onclick="return confirm('Close session?')">Close Session</button>
       </form>
     </div>
   </div>
 
   {% if floors %}
+
+    <!-- ── STATS BAR ── -->
+    <div class="floor-stats">
+      <div class="floor-stat">
+        <span class="floor-stat__label">Total Tables</span>
+        <span class="floor-stat__val">
+          {% with total=0 %}
+            {% for floor in floors %}{% for table in floor.tables.all %}{% if table.is_active %}{% with total=total|add:1 %}{% endwith %}{% endif %}{% endfor %}{% endfor %}
+            {{ floors|length }}
+          {% endwith %}
+        </span>
+      </div>
+      <div class="floor-stat">
+        <span class="floor-stat__label">Occupied</span>
+        <span class="floor-stat__val floor-stat__val--gold" id="stat-occupied">—</span>
+      </div>
+      <div class="floor-stat">
+        <span class="floor-stat__label">Available</span>
+        <span class="floor-stat__val floor-stat__val--success" id="stat-available">—</span>
+      </div>
+      <div class="floor-stat">
+        <span class="floor-stat__label">Session Opened</span>
+        <span class="floor-stat__val">{{ session.opened_at|date:"H:i" }}</span>
+      </div>
+    </div>
+
+    <!-- ── FLOOR TABS ── -->
     <div class="floor-tabs">
       {% for floor in floors %}
         <button class="floor-tab {% if forloop.first %}active{% endif %}"
@@ -104,48 +384,104 @@
       {% endfor %}
     </div>
 
+    <!-- ── FLOOR PANELS ── -->
     {% for floor in floors %}
-      <div class="floor-panel" id="floor-{{ floor.pk }}" {% if not forloop.first %}style="display:none"{% endif %}>
+      <div class="floor-panel" id="floor-{{ floor.pk }}"
+           {% if not forloop.first %}style="display:none"{% endif %}>
         <div class="floor-grid">
           {% for table in floor.tables.all %}
             {% if table.is_active %}
               <a href="{% url 'pos:order' table.pk %}"
-                 class="table-card {% if table.is_occupied %}occupied{% endif %}">
+                 class="table-card {% if table.is_occupied %}occupied{% elif table.is_reserved %}reserved{% endif %}">
                 <span class="table-card__seats">{{ table.seats }}p</span>
                 <span class="table-card__num">{{ table.number }}</span>
-                <span class="table-card__label">{% if table.is_occupied %}Occupied{% else %}Available{% endif %}</span>
+                <span class="table-card__label">
+                  {% if table.is_occupied %}Occupied{% elif table.is_reserved %}Reserved{% else %}Available{% endif %}
+                </span>
+                {% if table.is_occupied and table.active_order %}
+                  <span class="table-card__total">₹{{ table.active_order.grand_total }}</span>
+                {% endif %}
               </a>
             {% endif %}
           {% empty %}
-            <p style="color:var(--muted);font-family:var(--font-mono);font-size:0.7rem;grid-column:1/-1;padding:2rem 0;">No tables on this floor.</p>
+            <div class="floor-empty">
+              No tables on this floor.
+              <a href="{% url 'pos:backend' %}">Go to Config →</a>
+            </div>
           {% endfor %}
         </div>
       </div>
     {% endfor %}
 
-    <div class="legend">
-      <div class="legend-item"><span class="legend-dot legend-dot--available"></span>Available</div>
-      <div class="legend-item"><span class="legend-dot legend-dot--occupied"></span>Occupied</div>
+    <!-- ── LEGEND ── -->
+    <div class="floor-legend">
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--available"></span>Available
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--occupied"></span>Occupied
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot legend-dot--reserved"></span>Reserved
+      </div>
     </div>
 
   {% else %}
-    <div style="padding:4rem 2.5rem;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:0.75rem;letter-spacing:0.15em;">
-      No floors configured. <a href="{% url 'pos:backend' %}" style="color:var(--ink);border-bottom:1px solid;">Go to Config</a>
+    <div style="padding:6rem 2.5rem;text-align:center;">
+      <div style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;">
+        No floors configured
+      </div>
+      <a href="{% url 'pos:backend' %}" class="btn btn--outline">Go to Config →</a>
     </div>
   {% endif %}
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Floor tab switching
+  /* ── Custom Cursor ── */
+  (function () {
+    const dot  = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    if (!dot || !ring) return;
+    let rx = 0, ry = 0, mx = 0, my = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function tick() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      dot.style.left  = mx + 'px'; dot.style.top  = my + 'px';
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(tick);
+    }
+    tick();
+    document.querySelectorAll('a, button, .table-card, .floor-tab').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+  })();
+
+  /* ── Floor Tab Switching ── */
   document.querySelectorAll('.floor-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.floor-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.floor-panel').forEach(p => p.style.display = 'none');
       tab.classList.add('active');
       document.getElementById('floor-' + tab.dataset.floor).style.display = '';
+      updateStats();
     });
   });
+
+  /* ── Stats Bar ── */
+  function updateStats() {
+    const activePanel = document.querySelector('.floor-panel:not([style*="display:none"])') ||
+                        document.querySelector('.floor-panel');
+    if (!activePanel) return;
+    const all      = activePanel.querySelectorAll('.table-card:not(.reserved)');
+    const occupied = activePanel.querySelectorAll('.table-card.occupied');
+    document.getElementById('stat-occupied').textContent  = occupied.length;
+    document.getElementById('stat-available').textContent = all.length - occupied.length;
+  }
+  updateStats();
 </script>
 {% endblock %}

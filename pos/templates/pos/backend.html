@@ -1,130 +1,474 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Backend Config — Odoo.POS{% endblock %}
+{% block title %}Backend Config — Cafe.POS{% endblock %}
 {% block body_class %}pos-backend{% endblock %}
-{% block nav_class %}nav--pos{% endblock %}
-
-{% block nav_links %}
-  <a href="{% url 'pos:floor' %}"   class="nav__link">Floor View</a>
-  <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
-  <a href="{% url 'pos:backend' %}" class="nav__link active">Config</a>
-  <a href="{% url 'pos:reports' %}" class="nav__link">Reports</a>
-{% endblock %}
-
 {% block extra_css %}
 <style>
-  .backend-page { padding-top: calc(var(--nav-height) + 2.5rem); min-height: 100vh; padding-bottom: 4rem; }
-  .backend-wrap { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
 
-  .page-title { font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.25rem; }
-  .page-sub   { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2.5rem; }
+  :root,
+  [data-theme="light"],
+  [data-theme="dark"] {
+    --bg:          #0A0B0E;
+    --surface:     #111318;
+    --surface2:    #181C23;
+    --surface3:    #1E2330;
+    --border:      #252D3D;
+    --border2:     #2F3A50;
+    --text:        #E8E2D5;
+    --text2:       #7A8499;
+    --text3:       #3A4255;
+    --gold:        #C9A84C;
+    --gold2:       #A8873A;
+    --gold-gradient:    linear-gradient(90deg, #C9A84C 0%, #A8873A 100%);
+    --success:     #2EAB7B;
+    --success-muted: #2EAB7B18;
+    --danger:      #D95757;
+    --danger-muted: #D9575718;
+    --warning:     #D4844A;
+    --nav-height:  60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono:    'DM Mono', monospace;
+    --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+  }
 
-  /* Stats row */
-  .stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 3rem; }
-  .stat-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.25rem 1.5rem; }
-  .stat-val   { font-family: var(--font-display); font-size: 2rem; line-height: 1; }
-  .stat-label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 0.3rem; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Session card */
-  .session-card { background: var(--ink); color: var(--white); padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 3rem; }
-  .session-info__label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
-  .session-info__val   { font-family: var(--font-display); font-size: 1.5rem; }
+  body.pos-backend {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    cursor: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; border: none; background: none; cursor: none; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* ── CURSOR ── */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s ease, opacity 0.2s, background 0.3s;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+    transition: width 0.2s var(--ease-out), height 0.2s var(--ease-out), opacity 0.2s;
+  }
+  body.cursor-hover .cursor-ring { width: 52px; height: 52px; opacity: 0.25; }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .nav__links { display: flex; gap: 2.5rem; align-items: center; }
+  .nav__link {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2); transition: color var(--transition-fast);
+  }
+  .nav__link:hover { color: var(--gold); }
+  .nav__link.active { color: var(--gold); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.65rem 1.25rem;
+    border: 1px solid transparent;
+    transition: all var(--transition-base);
+    cursor: none; white-space: nowrap;
+  }
+  .btn--primary {
+    background: var(--gold-gradient);
+    color: var(--bg); border-color: var(--gold); font-weight: 500;
+  }
+  .btn--primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn--outline {
+    background: transparent; color: var(--text2); border-color: var(--border2);
+  }
+  .btn--outline:hover { border-color: var(--gold); color: var(--gold); }
+  .btn--ghost {
+    background: transparent; color: var(--text2); border-color: var(--border2); opacity: 0.6;
+  }
+  .btn--ghost:hover { opacity: 1; color: var(--text); }
+  .btn--danger {
+    background: transparent; color: var(--danger); border-color: var(--danger); opacity: 0.7;
+  }
+  .btn--danger:hover { opacity: 1; background: var(--danger); color: var(--bg); }
+
+  /* ── PAGE ── */
+  .backend-page {
+    padding-top: var(--nav-height);
+    min-height: 100vh;
+  }
+  .backend-wrap {
+    max-width: 1160px; margin: 0 auto;
+    padding: 2.5rem 2.5rem 5rem;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem; margin-bottom: 2rem;
+  }
+  .page-title {
+    font-family: var(--font-display); font-size: 2rem;
+    color: var(--text); line-height: 1; margin-bottom: 0.35rem;
+  }
+  .page-sub {
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text3);
+  }
+
+  /* ── STAT CARDS ── */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.25rem 1.5rem;
+    position: relative; overflow: hidden;
+    transition: border-color var(--transition-fast);
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition-base);
+  }
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-card:hover::after { transform: scaleX(1); }
+  .stat-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.5rem;
+  }
+  .stat-val {
+    font-family: var(--font-display); font-size: 2rem;
+    line-height: 1; color: var(--text);
+  }
+
+  /* ── SESSION CARD ── */
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2.5rem;
+    position: relative; overflow: hidden;
+  }
+  .session-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .session-info__label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.35rem;
+  }
+  .session-info__val {
+    font-family: var(--font-display); font-size: 1.5rem;
+    color: var(--text); line-height: 1.2;
+  }
+  .session-info__sub {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    color: var(--text3); margin-top: 0.35rem;
+  }
   .session-actions { display: flex; gap: 0.75rem; }
-  .btn--white { background: var(--white); color: var(--ink); }
-  .btn--white:hover { background: var(--cream); }
 
-  /* Sections */
+  /* ── SECTION ── */
   .section { margin-bottom: 3rem; }
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--sand-dark); }
-  .section-title { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text2);
+  }
 
-  /* Product table */
-  .data-table { width: 100%; border-collapse: collapse; }
-  .data-table th { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--sand-dark); }
-  .data-table td { padding: 0.65rem 0.75rem; font-size: 0.83rem; border-bottom: 1px solid var(--sand-dark); vertical-align: middle; }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tr:hover td { background: var(--cream); }
-  .price-cell { font-family: var(--font-mono); font-size: 0.75rem; }
+  /* ── PAYMENT METHOD GRID ── */
+  .pm-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+  }
+  .pm-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: border-color var(--transition-fast);
+    position: relative; overflow: hidden;
+  }
+  .pm-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition-base);
+  }
+  .pm-card:hover { border-color: var(--border2); }
+  .pm-card:hover::after { transform: scaleX(1); }
+  .pm-card.disabled { opacity: 0.4; }
+  .pm-card.disabled::after { display: none; }
 
-  /* Payment method toggles */
-  .pm-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
-  .pm-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
-  .pm-card.disabled { opacity: 0.45; }
-  .pm-name  { font-size: 0.95rem; font-weight: 500; }
-  .pm-type  { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-  .pm-upi   { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); word-break: break-all; }
-  .toggle-btn { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.4rem 0.9rem; border: 1px solid; cursor: pointer; transition: var(--transition-fast); }
-  .toggle-btn--on  { background: var(--success); color: var(--white); border-color: var(--success); }
-  .toggle-btn--off { background: var(--danger); color: var(--white); border-color: var(--danger); }
+  .pm-name {
+    font-size: 0.95rem; font-weight: 400; color: var(--text);
+  }
+  .pm-type {
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
+  }
+  .pm-upi {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--text2); word-break: break-all;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 0.4rem 0.6rem;
+  }
 
-  /* Floor table grid */
-  .floors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-  .floor-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.25rem; }
-  .floor-card__name { font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; }
-  .floor-card__tables { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
-  .table-chip { padding: 0.2rem 0.5rem; background: var(--sand); border: 1px solid var(--sand-dark); font-size: 0.6rem; }
-  .table-chip.occupied { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .toggle-btn {
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 0.42rem 0.9rem;
+    border: 1px solid; cursor: none;
+    transition: all var(--transition-fast);
+    align-self: flex-start;
+  }
+  .toggle-btn--on {
+    background: var(--success-muted); color: var(--success);
+    border-color: var(--success);
+  }
+  .toggle-btn--on:hover { background: var(--success); color: var(--bg); }
+  .toggle-btn--off {
+    background: var(--danger-muted); color: var(--danger);
+    border-color: var(--danger);
+  }
+  .toggle-btn--off:hover { background: var(--danger); color: var(--bg); }
+
+  /* ── FLOORS GRID ── */
+  .floors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .floor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.25rem 1.5rem;
+    transition: border-color var(--transition-fast);
+  }
+  .floor-card:hover { border-color: var(--border2); }
+  .floor-card__name {
+    font-size: 0.9rem; font-weight: 400; color: var(--text);
+    margin-bottom: 0.2rem;
+  }
+  .floor-card__count {
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+  .floor-card__chips {
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+    margin-top: 0.5rem;
+  }
+  .table-chip {
+    padding: 0.18rem 0.5rem;
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.08em;
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text2);
+    transition: all var(--transition-fast);
+  }
+  .table-chip.occupied {
+    background: rgba(201,168,76,0.12);
+    border-color: var(--gold2);
+    color: var(--gold);
+  }
+
+  /* ── DATA TABLE ── */
+  .table-wrap { border: 1px solid var(--border); overflow-x: auto; }
+  .data-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+  .data-table th {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text3); padding: 0.65rem 1rem;
+    text-align: left; border-bottom: 1px solid var(--border);
+    background: var(--surface2); white-space: nowrap;
+  }
+  .data-table td {
+    padding: 0.75rem 1rem; font-size: 0.82rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle; color: var(--text);
+  }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr { transition: background var(--transition-fast); }
+  .data-table tbody tr:hover td { background: var(--surface2); }
+
+  .price-cell { font-family: var(--font-mono); font-size: 0.72rem; color: var(--gold); }
+  .mono { font-family: var(--font-mono); font-size: 0.72rem; }
+  .text-muted { color: var(--text2); }
+
+  /* ── AVAILABILITY BADGES ── */
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.2rem 0.6rem; border: 1px solid;
+  }
+  .badge--yes {
+    color: var(--success); border-color: var(--success);
+    background: var(--success-muted);
+  }
+  .badge--no {
+    color: var(--text3); border-color: var(--border2);
+    background: transparent;
+  }
+
+  /* ── EMPTY / LINK STATES ── */
+  .empty-msg {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; color: var(--text3);
+  }
+  .empty-msg a { color: var(--gold); border-bottom: 1px solid var(--gold2); }
+  .table-empty {
+    padding: 2rem 1rem; text-align: center;
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
+  }
+  .table-empty a { color: var(--gold); }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- ── Custom Cursor ── -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="{% url 'pos:floor' %}" class="nav__logo">Cafe.POS</a>
+  <div class="nav__links">
+    <a href="{% url 'pos:floor' %}"   class="nav__link">Floor View</a>
+    <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
+    <a href="{% url 'pos:backend' %}" class="nav__link active">Config</a>
+    <a href="{% url 'pos:reports' %}" class="nav__link">Reports</a>
+  </div>
+</nav>
+
 <div class="backend-page">
   <div class="backend-wrap">
 
-    <div class="page-title">POS Configuration</div>
-    <div class="page-sub">Backend settings, products, floors & payment methods</div>
-
-    <!-- Stats -->
-    <div class="stat-row">
-      <div class="stat-card"><div class="stat-val">{{ product_count }}</div><div class="stat-label">Products</div></div>
-      <div class="stat-card"><div class="stat-val">{{ category_count }}</div><div class="stat-label">Categories</div></div>
-      <div class="stat-card"><div class="stat-val">{{ floor_count }}</div><div class="stat-label">Floors</div></div>
-      <div class="stat-card"><div class="stat-val">{{ table_count }}</div><div class="stat-label">Tables</div></div>
+    <!-- ── PAGE HEADER ── -->
+    <div class="page-header">
+      <div class="page-title">POS Configuration</div>
+      <div class="page-sub">Backend settings, products, floors &amp; payment methods</div>
     </div>
 
-    <!-- Session -->
+    <!-- ── STAT CARDS ── -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Products</div>
+        <div class="stat-val">{{ product_count }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Categories</div>
+        <div class="stat-val">{{ category_count }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Floors</div>
+        <div class="stat-val">{{ floor_count }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tables</div>
+        <div class="stat-val">{{ table_count }}</div>
+      </div>
+    </div>
+
+    <!-- ── SESSION CARD ── -->
     <div class="session-card">
       <div>
         <div class="session-info__label">Current Session</div>
         {% if session %}
-          <div class="session-info__val">Session #{{ session.pk }} · Open since {{ session.opened_at|date:"H:i" }}</div>
+          <div class="session-info__val">Session #{{ session.pk }} &middot; Open since {{ session.opened_at|date:"H:i" }}</div>
         {% else %}
           <div class="session-info__val">No active session</div>
         {% endif %}
         {% if last_closed %}
-          <div style="font-family:var(--font-mono);font-size:0.58rem;color:rgba(255,255,255,0.35);margin-top:0.25rem;">
+          <div class="session-info__sub">
             Last closed: ₹{{ last_closed.closing_sale_amount }} on {{ last_closed.closed_at|date:"d M, H:i" }}
           </div>
         {% endif %}
       </div>
       <div class="session-actions">
         {% if session %}
-          <a href="{% url 'pos:floor' %}" class="btn btn--sm btn--white">Open POS</a>
-          <form method="post" action="{% url 'pos:close_session' %}">
+          <a href="{% url 'pos:floor' %}" class="btn btn--primary">Open POS</a>
+          <form method="post" action="{% url 'pos:close_session' %}" style="display:inline;">
             {% csrf_token %}
-            <button class="btn btn--sm btn--outline" style="color:var(--white);border-color:rgba(255,255,255,0.3);"
+            <button type="submit" class="btn btn--danger"
                     onclick="return confirm('Close this session?')">Close Session</button>
           </form>
         {% else %}
-          <a href="{% url 'pos:open_session' %}" class="btn btn--sm btn--white">Open Session</a>
+          <a href="{% url 'pos:open_session' %}" class="btn btn--primary">Open Session</a>
         {% endif %}
       </div>
     </div>
 
-    <!-- Payment Methods -->
+    <!-- ── PAYMENT METHODS ── -->
     <div class="section">
       <div class="section-header">
         <div class="section-title">Payment Methods</div>
-        <a href="/admin/pos/paymentmethod/" class="btn btn--sm btn--outline" target="_blank">Manage in Admin</a>
+        <a href="/admin/pos/paymentmethod/" class="btn btn--outline" target="_blank">Manage in Admin ↗</a>
       </div>
       <div class="pm-grid">
         {% for pm in payment_methods %}
-          <div class="pm-card {% if not pm.is_enabled %}disabled{% endif %}">
+          <div class="pm-card {% if not pm.is_enabled %}disabled{% endif %}" id="pm-card-{{ pm.pk }}">
             <div>
               <div class="pm-name">{{ pm.get_type_display }}</div>
               <div class="pm-type">{{ pm.type }}</div>
-              {% if pm.upi_id %}<div class="pm-upi">{{ pm.upi_id }}</div>{% endif %}
+              {% if pm.upi_id %}
+                <div class="pm-upi">{{ pm.upi_id }}</div>
+              {% endif %}
             </div>
             <button class="toggle-btn {% if pm.is_enabled %}toggle-btn--on{% else %}toggle-btn--off{% endif %}"
                     onclick="togglePM({{ pm.pk }}, this)">
@@ -132,72 +476,88 @@
             </button>
           </div>
         {% empty %}
-          <p style="color:var(--muted);font-family:var(--font-mono);font-size:0.7rem;">
-            No payment methods. <a href="/admin/pos/paymentmethod/add/" target="_blank">Add one in Admin.</a>
+          <p class="empty-msg">
+            No payment methods.
+            <a href="/admin/pos/paymentmethod/add/" target="_blank">Add one in Admin.</a>
           </p>
         {% endfor %}
       </div>
     </div>
 
-    <!-- Floors & Tables -->
+    <!-- ── FLOORS & TABLES ── -->
     <div class="section">
       <div class="section-header">
-        <div class="section-title">Floors & Tables</div>
-        <a href="/admin/pos/floor/" class="btn btn--sm btn--outline" target="_blank">Manage in Admin</a>
+        <div class="section-title">Floors &amp; Tables</div>
+        <a href="/admin/pos/floor/" class="btn btn--outline" target="_blank">Manage in Admin ↗</a>
       </div>
       <div class="floors-grid">
         {% for floor in floors %}
           <div class="floor-card">
             <div class="floor-card__name">{{ floor.name }}</div>
-            <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);">{{ floor.tables.count }} table{{ floor.tables.count|pluralize }}</div>
-            <div class="floor-card__tables">
+            <div class="floor-card__count">{{ floor.tables.count }} table{{ floor.tables.count|pluralize }}</div>
+            <div class="floor-card__chips">
               {% for table in floor.tables.all %}
                 {% if table.is_active %}
-                  <span class="table-chip {% if table.is_occupied %}occupied{% endif %}">T{{ table.number }}</span>
+                  <span class="table-chip {% if table.is_occupied %}occupied{% endif %}">
+                    T{{ table.number }}
+                  </span>
                 {% endif %}
               {% endfor %}
             </div>
           </div>
         {% empty %}
-          <p style="color:var(--muted);font-family:var(--font-mono);font-size:0.7rem;">
-            No floors. <a href="/admin/pos/floor/add/" target="_blank">Add one in Admin.</a>
+          <p class="empty-msg">
+            No floors configured.
+            <a href="/admin/pos/floor/add/" target="_blank">Add one in Admin.</a>
           </p>
         {% endfor %}
       </div>
     </div>
 
-    <!-- Products -->
+    <!-- ── PRODUCTS ── -->
     <div class="section">
       <div class="section-header">
         <div class="section-title">Products ({{ product_count }})</div>
-        <a href="/admin/pos/product/" class="btn btn--sm btn--outline" target="_blank">Manage in Admin</a>
+        <a href="/admin/pos/product/" class="btn btn--outline" target="_blank">Manage in Admin ↗</a>
       </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Name</th><th>Category</th><th>Price</th><th>Tax %</th><th>Available</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for product in products %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>{{ product.name }}</td>
-              <td style="color:var(--muted);font-size:0.78rem;">{{ product.category|default:"—" }}</td>
-              <td class="price-cell">₹{{ product.price }}</td>
-              <td class="price-cell">{{ product.tax_rate }}%</td>
-              <td>
-                {% if product.is_available %}
-                  <span class="badge badge--available">Yes</span>
-                {% else %}
-                  <span class="badge badge--reserved">No</span>
-                {% endif %}
-              </td>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Tax %</th>
+              <th>Available</th>
             </tr>
-          {% empty %}
-            <tr><td colspan="5" style="color:var(--muted);font-family:var(--font-mono);font-size:0.7rem;padding:1.5rem 0.75rem;">No products yet. <a href="/admin/pos/product/add/" target="_blank">Add one.</a></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for product in products %}
+              <tr>
+                <td>{{ product.name }}</td>
+                <td class="text-muted" style="font-size:0.78rem;">{{ product.category|default:"—" }}</td>
+                <td class="price-cell">₹{{ product.price }}</td>
+                <td class="mono" style="color:var(--text2);">{{ product.tax_rate }}%</td>
+                <td>
+                  {% if product.is_available %}
+                    <span class="badge badge--yes">Yes</span>
+                  {% else %}
+                    <span class="badge badge--no">No</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">
+                  <div class="table-empty">
+                    No products yet. <a href="/admin/pos/product/add/" target="_blank">Add one in Admin.</a>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
   </div>
@@ -206,15 +566,42 @@
 
 {% block extra_js %}
 <script>
+  /* ── Custom Cursor ── */
+  (function () {
+    const dot  = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    if (!dot || !ring) return;
+    let rx = 0, ry = 0, mx = 0, my = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function tick() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      dot.style.left  = mx + 'px'; dot.style.top  = my + 'px';
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(tick);
+    }
+    tick();
+    document.querySelectorAll('a, button, .toggle-btn, .pm-card').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+  })();
+
+  /* ── Toggle Payment Method ── */
   const CSRF = '{{ csrf_token }}';
+
   function togglePM(id, btn) {
     fetch(`/pos/backend/payment/${id}/toggle/`, {
-      method: 'POST', headers: {'X-CSRFToken': CSRF}
-    }).then(r => r.json()).then(data => {
-      btn.textContent = data.enabled ? 'Enabled' : 'Disabled';
-      btn.className = 'toggle-btn ' + (data.enabled ? 'toggle-btn--on' : 'toggle-btn--off');
-      btn.closest('.pm-card').classList.toggle('disabled', !data.enabled);
-    });
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
+    })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = data.enabled ? 'Enabled' : 'Disabled';
+        btn.className   = 'toggle-btn ' + (data.enabled ? 'toggle-btn--on' : 'toggle-btn--off');
+        const card = document.getElementById('pm-card-' + id);
+        if (card) card.classList.toggle('disabled', !data.enabled);
+      });
   }
 </script>
 {% endblock %}

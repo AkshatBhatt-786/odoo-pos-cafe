@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
 
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/nav.css' %}">
 
@@ -44,6 +45,15 @@
         {% else %}
           <a href="{% url 'accounts:login' %}" class="btn btn--sm btn--primary">Sign in</a>
         {% endif %}
+
+        <!-- Theme toggle -->
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+          title="Toggle light / dark">
+          ☀
+        </button>
       </div>
     </nav>
   {% endblock %}
@@ -62,6 +72,7 @@
     {% block content %}{% endblock %}
   </main>
 
+  <script src="{% static 'js/landing.js' %}"
   <script src="{% static 'js/main.js' %}"></script>
 
   {% block extra_js %}{% endblock %}

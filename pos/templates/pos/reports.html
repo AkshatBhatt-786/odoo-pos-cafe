@@ -1,61 +1,358 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Reports — Odoo.POS{% endblock %}
+{% block title %}Reports — Cafe.POS{% endblock %}
 {% block body_class %}pos-reports{% endblock %}
-{% block nav_class %}nav--pos{% endblock %}
-
-{% block nav_links %}
-  <a href="{% url 'pos:floor' %}"   class="nav__link">Floor View</a>
-  <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
-  <a href="{% url 'pos:backend' %}" class="nav__link">Config</a>
-  <a href="{% url 'pos:reports' %}" class="nav__link active">Reports</a>
-{% endblock %}
 
 {% block extra_css %}
 <style>
-  .reports-page { padding-top: calc(var(--nav-height) + 2.5rem); min-height: 100vh; padding-bottom: 4rem; }
-  .reports-wrap { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
 
-  .page-title { font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.25rem; }
-  .page-sub   { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2.5rem; }
+  :root,
+  [data-theme="light"],
+  [data-theme="dark"] {
+    --bg:          #0A0B0E;
+    --surface:     #111318;
+    --surface2:    #181C23;
+    --surface3:    #1E2330;
+    --border:      #252D3D;
+    --border2:     #2F3A50;
+    --text:        #E8E2D5;
+    --text2:       #7A8499;
+    --text3:       #3A4255;
+    --gold:        #C9A84C;
+    --gold2:       #A8873A;
+    --gold-gradient:    linear-gradient(90deg, #C9A84C 0%, #A8873A 100%);
+    --success:     #2EAB7B;
+    --success-muted: #2EAB7B18;
+    --danger:      #D95757;
+    --warning:     #D4844A;
+    --nav-height:  60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono:    'DM Mono', monospace;
+    --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+  }
 
-  /* Filter bar */
-  .filter-bar { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.25rem 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 2rem; }
-  .filter-group { display: flex; flex-direction: column; gap: 0.4rem; }
-  .filter-label { font-family: var(--font-mono); font-size: 0.57rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
-  .filter-bar .btn { align-self: flex-end; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Period tabs */
-  .period-tabs { display: flex; gap: 0.4rem; }
-  .period-tab { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.45rem 0.85rem; background: var(--sand); border: 1px solid var(--sand-dark); cursor: pointer; color: var(--muted); text-decoration: none; transition: var(--transition-fast); }
-  .period-tab.active, .period-tab:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  body.pos-reports {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    cursor: none;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  /* Stats */
-  .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 2rem; }
-  .stat-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.5rem; }
-  .stat-val   { font-family: var(--font-display); font-size: 2.2rem; line-height: 1; }
-  .stat-label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 0.3rem; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; border: none; background: none; cursor: none; }
 
-  /* Orders table */
-  .section-title { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--sand-dark); display: flex; justify-content: space-between; align-items: center; }
-  .data-table { width: 100%; border-collapse: collapse; }
-  .data-table th { font-family: var(--font-mono); font-size: 0.57rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--sand-dark); }
-  .data-table td { padding: 0.65rem 0.75rem; font-size: 0.83rem; border-bottom: 1px solid var(--sand-dark); vertical-align: middle; }
-  .data-table tr:hover td { background: var(--cream); }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* ── CURSOR ── */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s ease, opacity 0.2s, background 0.3s;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+    transition: width 0.2s var(--ease-out), height 0.2s var(--ease-out), opacity 0.2s;
+  }
+  body.cursor-hover .cursor-ring { width: 52px; height: 52px; opacity: 0.25; }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .nav__links { display: flex; gap: 2.5rem; align-items: center; }
+  .nav__link {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2); transition: color var(--transition-fast);
+  }
+  .nav__link:hover { color: var(--gold); }
+  .nav__link.active { color: var(--gold); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.65rem 1.25rem;
+    border: 1px solid transparent;
+    transition: all var(--transition-base);
+    cursor: none; white-space: nowrap;
+  }
+  .btn--primary {
+    background: var(--gold-gradient);
+    color: var(--bg); border-color: var(--gold); font-weight: 500;
+  }
+  .btn--primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn--outline {
+    background: transparent; color: var(--text2); border-color: var(--border2);
+  }
+  .btn--outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── FORM INPUTS ── */
+  .input, .select {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border2);
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color var(--transition-fast);
+    appearance: none; -webkit-appearance: none;
+  }
+  .input:focus, .select:focus { border-color: var(--gold); }
+  .input[type="date"] { color-scheme: dark; }
+  select.select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237A8499' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+  }
+
+  /* ── PAGE LAYOUT ── */
+  .reports-page {
+    padding-top: var(--nav-height);
+    min-height: 100vh;
+  }
+  .reports-wrap {
+    max-width: 1160px; margin: 0 auto;
+    padding: 2.5rem 2.5rem 4rem;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem; margin-bottom: 2rem;
+  }
+  .page-title {
+    font-family: var(--font-display); font-size: 2rem;
+    color: var(--text); line-height: 1; margin-bottom: 0.4rem;
+  }
+  .page-sub {
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text3);
+  }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.25rem 1.5rem;
+    display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-end;
+    margin-bottom: 2rem;
+    position: relative; overflow: hidden;
+  }
+  .filter-bar::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .filter-group {
+    display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  .filter-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text3);
+  }
+  .filter-actions { display: flex; gap: 0.5rem; align-self: flex-end; }
+
+  /* ── PERIOD TABS ── */
+  .period-tabs { display: flex; gap: 0; }
+  .period-tab {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 0.48rem 0.9rem;
+    background: var(--surface2); border: 1px solid var(--border2);
+    cursor: none; color: var(--text2); text-decoration: none;
+    transition: all var(--transition-fast);
+    margin-right: -1px;
+  }
+  .period-tab:hover { color: var(--text); border-color: var(--border2); z-index: 1; }
+  .period-tab.active {
+    background: var(--gold-gradient);
+    color: var(--bg); border-color: var(--gold);
+    z-index: 2;
+  }
+
+  /* ── STAT CARDS ── */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    position: relative; overflow: hidden;
+    transition: border-color var(--transition-fast);
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition-base);
+  }
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-card:hover::after { transform: scaleX(1); }
+
+  .stat-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.6rem;
+  }
+  .stat-val {
+    font-family: var(--font-display); font-size: 2.2rem;
+    line-height: 1; color: var(--text);
+  }
+  .stat-val--gold    { color: var(--gold); }
+  .stat-val--success { color: var(--success); }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 0; padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .section-title span:last-child { color: var(--text3); font-size: 0.52rem; }
+
+  /* ── DATA TABLE ── */
+  .table-wrap {
+    border: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .data-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--surface);
+  }
+  .data-table th {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text3); padding: 0.65rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+  .data-table td {
+    padding: 0.75rem 1rem; font-size: 0.82rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle; color: var(--text);
+  }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr {
+    transition: background var(--transition-fast);
+  }
+  .data-table tbody tr:hover td { background: var(--surface2); }
+
   .mono { font-family: var(--font-mono); font-size: 0.72rem; }
-  .text-muted { color: var(--muted); }
+  .text-muted { color: var(--text2); }
+  .text-dim   { color: var(--text3); font-size: 0.65rem; }
+
+  /* ── PAYMENT BADGES ── */
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid;
+  }
+  .badge--cash {
+    color: var(--success); border-color: var(--success);
+    background: var(--success-muted);
+  }
+  .badge--upi {
+    color: var(--gold); border-color: var(--gold);
+    background: rgba(201,168,76,0.1);
+  }
+  .badge--card {
+    color: var(--text2); border-color: var(--border2);
+    background: var(--surface3);
+  }
+  .badge--other {
+    color: var(--text3); border-color: var(--border);
+    background: transparent;
+  }
+
+  /* ── EMPTY STATE ── */
+  .table-empty {
+    padding: 3rem 1rem; text-align: center;
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3);
+  }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- ── Custom Cursor ── -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="{% url 'pos:floor' %}" class="nav__logo">Cafe.POS</a>
+  <div class="nav__links">
+    <a href="{% url 'pos:floor' %}"   class="nav__link">Floor View</a>
+    <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
+    <a href="{% url 'pos:backend' %}" class="nav__link">Config</a>
+    <a href="{% url 'pos:reports' %}" class="nav__link active">Reports</a>
+  </div>
+</nav>
+
 <div class="reports-page">
   <div class="reports-wrap">
 
-    <div class="page-title">Sales Reports</div>
-    <div class="page-sub">Filter by period, session, staff, or product</div>
+    <!-- ── PAGE HEADER ── -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Sales Reports</div>
+        <div class="page-sub">Filter by period, session, staff, or product</div>
+      </div>
+    </div>
 
-    <!-- Filters -->
+    <!-- ── FILTER BAR ── -->
     <form method="get" action="{% url 'pos:reports' %}">
       <div class="filter-bar">
 
@@ -67,6 +364,8 @@
                class="period-tab {% if period == 'today' %}active{% endif %}">Today</a>
             <a href="?period=week{% if selected_session %}&session_id={{ selected_session }}{% endif %}"
                class="period-tab {% if period == 'week' %}active{% endif %}">This Week</a>
+            <a href="?period=month{% if selected_session %}&session_id={{ selected_session }}{% endif %}"
+               class="period-tab {% if period == 'month' %}active{% endif %}">This Month</a>
             <a href="?period=custom{% if selected_session %}&session_id={{ selected_session }}{% endif %}"
                class="period-tab {% if period == 'custom' %}active{% endif %}">Custom</a>
           </div>
@@ -77,34 +376,36 @@
         {% if period == 'custom' %}
           <div class="filter-group">
             <label class="filter-label">From</label>
-            <input type="date" name="date_from" value="{{ date_from }}" class="input" style="width:auto;">
+            <input type="date" name="date_from" value="{{ date_from }}" class="input" style="width:160px;">
           </div>
           <div class="filter-group">
             <label class="filter-label">To</label>
-            <input type="date" name="date_to" value="{{ date_to }}" class="input" style="width:auto;">
+            <input type="date" name="date_to" value="{{ date_to }}" class="input" style="width:160px;">
           </div>
         {% endif %}
 
         <!-- Session -->
         <div class="filter-group">
           <label class="filter-label">Session</label>
-          <select name="session_id" class="select" style="width:180px;">
+          <select name="session_id" class="select" style="width:200px;">
             <option value="">All sessions</option>
             {% for s in sessions %}
-              <option value="{{ s.pk }}" {% if selected_session == s.pk|stringformat:"s" %}selected{% endif %}>
+              <option value="{{ s.pk }}"
+                {% if selected_session == s.pk|stringformat:"s" %}selected{% endif %}>
                 #{{ s.pk }} — {{ s.opened_at|date:"d M H:i" }}
               </option>
             {% endfor %}
           </select>
         </div>
 
-        <!-- Responsible -->
+        <!-- Staff -->
         <div class="filter-group">
           <label class="filter-label">Staff</label>
-          <select name="responsible_id" class="select" style="width:160px;">
+          <select name="responsible_id" class="select" style="width:180px;">
             <option value="">All staff</option>
             {% for u in users %}
-              <option value="{{ u.pk }}" {% if selected_responsible == u.pk|stringformat:"s" %}selected{% endif %}>
+              <option value="{{ u.pk }}"
+                {% if selected_responsible == u.pk|stringformat:"s" %}selected{% endif %}>
                 {{ u.get_full_name|default:u.username }}
               </option>
             {% endfor %}
@@ -114,79 +415,118 @@
         <!-- Product -->
         <div class="filter-group">
           <label class="filter-label">Product</label>
-          <select name="product_id" class="select" style="width:160px;">
+          <select name="product_id" class="select" style="width:180px;">
             <option value="">All products</option>
             {% for p in products %}
-              <option value="{{ p.pk }}" {% if selected_product == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+              <option value="{{ p.pk }}"
+                {% if selected_product == p.pk|stringformat:"s" %}selected{% endif %}>
+                {{ p.name }}
+              </option>
             {% endfor %}
           </select>
         </div>
 
-        <button type="submit" class="btn btn--primary btn--sm">Apply</button>
-        <a href="{% url 'pos:reports' %}" class="btn btn--outline btn--sm">Reset</a>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn--primary">Apply</button>
+          <a href="{% url 'pos:reports' %}" class="btn btn--outline">Reset</a>
+        </div>
+
       </div>
     </form>
 
-    <!-- Summary stats -->
+    <!-- ── STAT CARDS ── -->
     <div class="stat-row">
       <div class="stat-card">
-        <div class="stat-val">₹{{ total_revenue|floatformat:2 }}</div>
         <div class="stat-label">Total Revenue</div>
+        <div class="stat-val stat-val--gold">₹{{ total_revenue|floatformat:2 }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val">{{ total_orders }}</div>
         <div class="stat-label">Orders Paid</div>
+        <div class="stat-val">{{ total_orders }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val">
+        <div class="stat-label">Avg Order Value</div>
+        <div class="stat-val stat-val--success">
           {% if total_orders %}
             ₹{% widthratio total_revenue total_orders 1 %}
           {% else %}—{% endif %}
         </div>
-        <div class="stat-label">Avg Order Value</div>
       </div>
     </div>
 
-    <!-- Orders list -->
+    <!-- ── ORDERS TABLE ── -->
     <div class="section-title">
       <span>Recent Orders</span>
-      <span style="color:var(--muted);">Showing up to 50 results</span>
+      <span>Showing up to 50 results</span>
     </div>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Table</th>
-          <th>Staff</th>
-          <th>Payment</th>
-          <th>Total</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for order in orders %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
           <tr>
-            <td class="mono">#{{ order.pk }}</td>
-            <td>{{ order.table|default:"—" }}</td>
-            <td class="text-muted" style="font-size:0.78rem;">{{ order.session.user.get_full_name|default:order.session.user.username|default:"—" }}</td>
-            <td>
-              <span class="badge {% if order.payment_method == 'cash' %}badge--available{% elif order.payment_method == 'upi' %}badge--occupied{% else %}badge--reserved{% endif %}">
-                {{ order.get_payment_method_display }}
-              </span>
-            </td>
-            <td class="mono">₹{{ order.grand_total }}</td>
-            <td class="mono text-muted" style="font-size:0.65rem;">{{ order.updated_at|date:"d M y, H:i" }}</td>
+            <th>#</th>
+            <th>Table</th>
+            <th>Staff</th>
+            <th>Payment</th>
+            <th>Total</th>
+            <th>Date</th>
           </tr>
-        {% empty %}
-          <tr>
-            <td colspan="6" style="color:var(--muted);font-family:var(--font-mono);font-size:0.7rem;padding:2rem 0.75rem;text-align:center;">
-              No paid orders match these filters.
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr>
+              <td class="mono" style="color:var(--text2);">#{{ order.pk }}</td>
+              <td>{{ order.table|default:"—" }}</td>
+              <td class="text-muted" style="font-size:0.78rem;">
+                {{ order.session.user.get_full_name|default:order.session.user.username|default:"—" }}
+              </td>
+              <td>
+                <span class="badge
+                  {% if order.payment_method == 'cash' %}badge--cash
+                  {% elif order.payment_method == 'upi' %}badge--upi
+                  {% elif order.payment_method == 'card' %}badge--card
+                  {% else %}badge--other{% endif %}">
+                  {{ order.get_payment_method_display }}
+                </span>
+              </td>
+              <td class="mono" style="color:var(--gold);">₹{{ order.grand_total }}</td>
+              <td class="mono text-dim">{{ order.updated_at|date:"d M y, H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="table-empty">No paid orders match these filters.</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  /* ── Custom Cursor ── */
+  (function () {
+    const dot  = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    if (!dot || !ring) return;
+    let rx = 0, ry = 0, mx = 0, my = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function tick() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      dot.style.left  = mx + 'px'; dot.style.top  = my + 'px';
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(tick);
+    }
+    tick();
+    document.querySelectorAll('a, button, .period-tab, select, input').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+  })();
+</script>
 {% endblock %}

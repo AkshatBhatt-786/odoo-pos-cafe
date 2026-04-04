@@ -3,150 +3,521 @@
 
 {% block title %}Payment — Table {{ order.table.number }}{% endblock %}
 {% block body_class %}pos-payment{% endblock %}
-{% block nav_class %}nav--pos{% endblock %}
-
-{% block nav_links %}
-  <a href="{% url 'pos:floor' %}" class="nav__link">← Floor</a>
-  <a href="{% url 'pos:order' order.table_id %}" class="nav__link">← Order</a>
-{% endblock %}
 
 {% block extra_css %}
 <style>
-  .payment-page { padding-top: calc(var(--nav-height) + 3rem); min-height: 100vh; display: flex; justify-content: center; }
-  .payment-wrap { width: 100%; max-width: 860px; padding: 0 2rem 4rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
 
-  /* Order summary */
-  .summary-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 2rem; }
-  .summary-title { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.25rem; }
-  .summary-line { display: flex; justify-content: space-between; align-items: baseline; padding: 0.45rem 0; border-bottom: 1px solid var(--sand-dark); font-size: 0.85rem; }
-  .summary-line__name { flex: 1; }
-  .summary-line__qty  { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); margin: 0 0.75rem; }
-  .summary-line__price { font-family: var(--font-mono); font-size: 0.7rem; }
-  .summary-totals { margin-top: 1rem; }
-  .summary-row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); margin-bottom: 0.3rem; }
-  .summary-row--grand { font-size: 1.1rem; color: var(--ink); font-weight: 600; border-top: 1px solid var(--sand-dark); padding-top: 0.6rem; margin-top: 0.6rem; font-family: var(--font-display); }
-
-  /* Payment methods */
-  .methods-card { background: var(--sand-light); border: 1px solid var(--sand-dark); padding: 2rem; }
-  .methods-title { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.25rem; }
-  .method-btn {
-    width: 100%; padding: 1rem 1.25rem; margin-bottom: 0.6rem;
-    background: var(--cream); border: 1px solid var(--sand-dark);
-    text-align: left; cursor: pointer; display: flex; align-items: center;
-    justify-content: space-between; transition: var(--transition-fast); font-family: var(--font-body);
+  :root,
+  [data-theme="light"],
+  [data-theme="dark"] {
+    --bg:          #0A0B0E;
+    --surface:     #111318;
+    --surface2:    #181C23;
+    --surface3:    #1E2330;
+    --border:      #252D3D;
+    --border2:     #2F3A50;
+    --text:        #E8E2D5;
+    --text2:       #7A8499;
+    --text3:       #3A4255;
+    --gold:        #C9A84C;
+    --gold2:       #A8873A;
+    --gold-gradient:    linear-gradient(90deg, #C9A84C 0%, #A8873A 100%);
+    --success:     #2EAB7B;
+    --success-muted: #2EAB7B18;
+    --danger:      #D95757;
+    --warning:     #D4844A;
+    --nav-height:  60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono:    'DM Mono', monospace;
+    --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
   }
-  .method-btn:hover  { background: var(--sand); border-color: var(--ink); }
-  .method-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
-  .method-btn__name  { font-size: 0.88rem; font-weight: 500; }
-  .method-btn__icon  { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-  .method-btn.active .method-btn__icon { color: rgba(255,255,255,0.5); }
 
-  /* QR overlay */
-  .qr-overlay { display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.6); z-index: 300; align-items: center; justify-content: center; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body.pos-payment {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    cursor: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; border: none; background: none; cursor: none; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* ── CURSOR ── */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s ease, opacity 0.2s, background 0.3s;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+    transition: width 0.2s var(--ease-out), height 0.2s var(--ease-out), opacity 0.2s;
+  }
+  body.cursor-hover .cursor-ring { width: 52px; height: 52px; opacity: 0.25; }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .nav__links { display: flex; gap: 2.5rem; align-items: center; }
+  .nav__link {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2); transition: color var(--transition-fast);
+  }
+  .nav__link:hover { color: var(--gold); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid transparent;
+    transition: all var(--transition-base);
+    cursor: none; white-space: nowrap;
+  }
+  .btn--primary {
+    background: var(--gold-gradient);
+    color: var(--bg); border-color: var(--gold); font-weight: 500;
+  }
+  .btn--primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201,168,76,0.2); }
+  .btn--outline {
+    background: transparent; color: var(--text2); border-color: var(--border2);
+  }
+  .btn--outline:hover { border-color: var(--gold); color: var(--gold); }
+  .btn--success {
+    background: var(--success-muted); color: var(--success);
+    border-color: var(--success);
+  }
+  .btn--success:hover { background: var(--success); color: var(--bg); }
+  .btn--full { width: 100%; }
+
+  /* ── PAGE LAYOUT ── */
+  .payment-page {
+    padding-top: var(--nav-height);
+    min-height: 100vh;
+    display: flex; justify-content: center; align-items: flex-start;
+  }
+  .payment-wrap {
+    width: 100%; max-width: 900px;
+    padding: 3rem 2rem 5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* ── SUMMARY CARD ── */
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .summary-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .summary-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-top: 2px;
+  }
+  .summary-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.25rem;
+  }
+  .summary-title {
+    font-family: var(--font-display); font-size: 1.3rem;
+    color: var(--text); line-height: 1.1;
+  }
+
+  .summary-lines { padding: 0.5rem 1.5rem; }
+  .summary-line {
+    display: flex; align-items: baseline;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.83rem;
+  }
+  .summary-line:last-child { border-bottom: none; }
+  .summary-line__name { flex: 1; color: var(--text); }
+  .summary-line__qty {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--text3); margin: 0 1rem;
+  }
+  .summary-line__price {
+    font-family: var(--font-mono); font-size: 0.7rem; color: var(--gold);
+  }
+
+  .summary-totals {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text2); margin-bottom: 0.35rem;
+  }
+  .summary-row:last-child { margin-bottom: 0; }
+  .summary-row--grand {
+    font-family: var(--font-display); font-size: 1.25rem;
+    color: var(--text);
+    border-top: 1px solid var(--border2);
+    padding-top: 0.65rem; margin-top: 0.5rem;
+  }
+  .summary-row--grand .summary-row__val { color: var(--gold); }
+
+  /* ── METHODS CARD ── */
+  .methods-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .methods-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+  .methods-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-top: 2px;
+  }
+  .methods-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.25rem;
+  }
+  .methods-title {
+    font-family: var(--font-display); font-size: 1.3rem;
+    color: var(--text); line-height: 1.1;
+  }
+
+  .methods-list { padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .method-btn {
+    width: 100%; padding: 1rem 1.25rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    text-align: left; cursor: none;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all var(--transition-fast);
+    position: relative; overflow: hidden;
+  }
+  .method-btn::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--transition-base);
+  }
+  .method-btn:hover {
+    background: var(--surface3);
+    border-color: var(--border2);
+    transform: translateX(3px);
+  }
+  .method-btn:hover::after { transform: scaleX(1); }
+  .method-btn.active {
+    background: var(--surface3);
+    border-color: var(--gold);
+    border-left: 3px solid var(--gold);
+  }
+  .method-btn.active::after { transform: scaleX(1); }
+
+  .method-btn__name {
+    font-size: 0.88rem; font-weight: 400; color: var(--text);
+  }
+  .method-btn.active .method-btn__name { color: var(--gold); }
+  .method-btn__type {
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
+  }
+  .method-btn.active .method-btn__type { color: var(--gold2); }
+
+  /* Confirm area */
+  .methods-footer {
+    padding: 0 1.5rem 1.5rem;
+  }
+  .confirm-btn {
+    display: none; width: 100%;
+  }
+  .confirm-btn.show { display: flex; }
+
+  /* ── QR MODAL ── */
+  .qr-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: center; justify-content: center;
+  }
   .qr-overlay.active { display: flex; }
-  .qr-box { background: var(--cream); border: 1px solid var(--sand-dark); padding: 3rem; text-align: center; max-width: 380px; width: 90%; }
-  .qr-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
-  .qr-amount { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 1.5rem; }
-  .qr-img { width: 200px; height: 200px; margin: 0 auto 1.5rem; border: 1px solid var(--sand-dark); background: var(--white); display: flex; align-items: center; justify-content: center; }
-  .qr-img img { width: 100%; height: 100%; }
-  .qr-upi { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); margin-bottom: 1.5rem; }
-  .qr-actions { display: flex; gap: 0.75rem; }
 
-  .confirm-btn { display: none; margin-top: 1rem; }
-  .confirm-btn.show { display: block; }
+  .qr-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    text-align: center;
+    max-width: 400px; width: 90%;
+    position: relative; overflow: hidden;
+  }
+  .qr-box::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+
+  .qr-label {
+    font-family: var(--font-mono); font-size: 0.52rem;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 0.75rem;
+    margin-top: 2px;
+  }
+  .qr-amount {
+    font-family: var(--font-display); font-size: 2.8rem;
+    color: var(--gold); line-height: 1; margin-bottom: 1.75rem;
+  }
+
+  .qr-img-wrap {
+    width: 200px; height: 200px;
+    margin: 0 auto 1.5rem;
+    background: var(--white);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    padding: 8px;
+  }
+  .qr-img-wrap img { width: 100%; height: 100%; display: block; }
+  .qr-img-placeholder {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: var(--text3); line-height: 1.6; padding: 1rem;
+  }
+
+  .qr-upi {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text2); margin-bottom: 1.75rem;
+    background: var(--surface2); border: 1px solid var(--border2);
+    padding: 0.5rem 0.75rem; display: inline-block;
+  }
+
+  .qr-actions { display: flex; gap: 0.75rem; }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- ── Custom Cursor ── -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="{% url 'pos:floor' %}" class="nav__logo">Cafe.POS</a>
+  <div class="nav__links">
+    <a href="{% url 'pos:floor' %}"               class="nav__link">← Floor</a>
+    <a href="{% url 'pos:order' order.table_id %}" class="nav__link">← Order</a>
+  </div>
+</nav>
+
 <div class="payment-page">
   <div class="payment-wrap">
 
-    <!-- Order summary -->
+    <!-- ════════════════════════
+         LEFT — Order Summary
+         ════════════════════════ -->
     <div class="summary-card">
-      <div class="summary-title">Order #{{ order.pk }} · Table {{ order.table.number }}</div>
-      {% for line in lines %}
-        <div class="summary-line">
-          <span class="summary-line__name">{{ line.product.name }}</span>
-          <span class="summary-line__qty">× {{ line.quantity }}</span>
-          <span class="summary-line__price">₹{{ line.line_total }}</span>
-        </div>
-      {% endfor %}
+      <div class="summary-header">
+        <div class="summary-label">Order Summary</div>
+        <div class="summary-title">Order #{{ order.pk }} &middot; Table {{ order.table.number }}</div>
+      </div>
+
+      <div class="summary-lines">
+        {% for line in lines %}
+          <div class="summary-line">
+            <span class="summary-line__name">{{ line.product.name }}</span>
+            <span class="summary-line__qty">× {{ line.quantity }}</span>
+            <span class="summary-line__price">₹{{ line.line_total }}</span>
+          </div>
+        {% endfor %}
+      </div>
+
       <div class="summary-totals">
-        <div class="summary-row"><span>Subtotal</span><span>₹{{ order.subtotal }}</span></div>
-        <div class="summary-row"><span>Tax</span><span>₹{{ order.tax_total }}</span></div>
-        <div class="summary-row summary-row--grand"><span>Total</span><span>₹{{ order.grand_total }}</span></div>
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span class="summary-row__val">₹{{ order.subtotal }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Tax</span>
+          <span class="summary-row__val">₹{{ order.tax_total }}</span>
+        </div>
+        <div class="summary-row summary-row--grand">
+          <span>Total</span>
+          <span class="summary-row__val">₹{{ order.grand_total }}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Payment methods -->
+    <!-- ════════════════════════
+         RIGHT — Payment Methods
+         ════════════════════════ -->
     <div class="methods-card">
-      <div class="methods-title">Select Payment Method</div>
+      <div class="methods-header">
+        <div class="methods-label">Collect Payment</div>
+        <div class="methods-title">Select Method</div>
+      </div>
 
-      {% for pm in payment_methods %}
-        <button class="method-btn" data-method="{{ pm.type }}" onclick="selectMethod('{{ pm.type }}')">
-          <span class="method-btn__name">{{ pm.get_type_display }}</span>
-          <span class="method-btn__icon">
-            {% if pm.type == 'cash' %}💵{% elif pm.type == 'digital' %}💳{% else %}📱{% endif %}
-          </span>
-        </button>
-      {% endfor %}
+      <div class="methods-list">
+        {% for pm in payment_methods %}
+          <button class="method-btn"
+                  data-method="{{ pm.type }}"
+                  onclick="selectMethod('{{ pm.type }}')">
+            <span class="method-btn__name">{{ pm.get_type_display }}</span>
+            <span class="method-btn__type">{{ pm.type }}</span>
+          </button>
+        {% endfor %}
+      </div>
 
-      <!-- Hidden form submitted after method selection (non-UPI) -->
-      <form method="post" action="{% url 'pos:process_payment' order.pk %}" id="payment-form">
-        {% csrf_token %}
-        <input type="hidden" name="method" id="method-input" value="">
-        <button type="submit" class="btn btn--primary btn--full confirm-btn" id="confirm-btn">
-          Confirm Payment →
-        </button>
-      </form>
+      <div class="methods-footer">
+        <form method="post" action="{% url 'pos:process_payment' order.pk %}" id="payment-form">
+          {% csrf_token %}
+          <input type="hidden" name="method" id="method-input" value="">
+          <button type="submit" class="btn btn--primary confirm-btn" id="confirm-btn">
+            Confirm Payment →
+          </button>
+        </form>
+      </div>
     </div>
+
   </div>
 </div>
 
-<!-- UPI QR overlay -->
+<!-- ── UPI QR Overlay ── -->
 <div class="qr-overlay" id="qr-overlay">
   <div class="qr-box">
-    <div class="qr-label">UPI QR Payment</div>
+    <div class="qr-label">UPI Payment</div>
     <div class="qr-amount">₹{{ order.grand_total }}</div>
-    <div class="qr-img">
+
+    <!-- <div class="qr-img-wrap">
       {% if upi_method and upi_method.upi_id %}
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa={{ upi_method.upi_id }}&am={{ order.grand_total }}&tn=OdooPOS"
-             alt="UPI QR" />
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa={{ upi_method.upi_id }}&amp;am={{ order.grand_total }}&amp;tn=CafePOS&amp;cu=INR"
+     alt="UPI QR Code" />
       {% else %}
-        <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);padding:1rem;">QR unavailable<br>No UPI ID configured</span>
+        <div class="qr-img-placeholder">QR unavailable<br>No UPI ID configured</div>
       {% endif %}
-    </div>
-    {% if upi_method %}<div class="qr-upi">{{ upi_method.upi_id }}</div>{% endif %}
+    </div> -->
+
+    <div class="qr-img-wrap">
+  {% if qr_url %}
+    <img src="{{ qr_url }}" alt="UPI QR Code" />
+  {% else %}
+    <div class="qr-img-placeholder">QR unavailable<br>No UPI ID configured</div>
+  {% endif %}
+</div>
+
+    {% if upi_method %}
+      <div class="qr-upi">{{ upi_method.upi_id }}</div>
+    {% endif %}
+
     <div class="qr-actions">
-      <form method="post" action="{% url 'pos:process_payment' order.pk %}" style="flex:1">
+      <form method="post" action="{% url 'pos:process_payment' order.pk %}" style="flex:1;">
         {% csrf_token %}
         <input type="hidden" name="method" value="upi">
-        <button type="submit" class="btn btn--primary btn--full">Confirmed ✓</button>
+        <button type="submit" class="btn btn--success btn--full">Payment Received ✓</button>
       </form>
-      <button class="btn btn--outline" onclick="closeQR()" style="flex:1">Cancel</button>
+      <button class="btn btn--outline" onclick="closeQR()" style="flex:1;">Cancel</button>
     </div>
   </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+  /* ── Custom Cursor ── */
+  (function () {
+    const dot  = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    if (!dot || !ring) return;
+    let rx = 0, ry = 0, mx = 0, my = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function tick() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      dot.style.left  = mx + 'px'; dot.style.top  = my + 'px';
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(tick);
+    }
+    tick();
+    document.querySelectorAll('a, button, .method-btn').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+  })();
+
+  /* ── Select Payment Method ── */
   function selectMethod(method) {
     document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`[data-method="${method}"]`).classList.add('active');
+    const active = document.querySelector(`.method-btn[data-method="${method}"]`);
+    if (active) active.classList.add('active');
 
     if (method === 'upi') {
       document.getElementById('qr-overlay').classList.add('active');
       return;
     }
+
     document.getElementById('method-input').value = method;
     document.getElementById('confirm-btn').classList.add('show');
   }
 
+  /* ── Close QR Modal ── */
   function closeQR() {
     document.getElementById('qr-overlay').classList.remove('active');
     document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('confirm-btn').classList.remove('show');
   }
+
+  /* ── Close QR on backdrop click ── */
+  document.getElementById('qr-overlay').addEventListener('click', function (e) {
+    if (e.target === this) closeQR();
+  });
 </script>
 {% endblock %}

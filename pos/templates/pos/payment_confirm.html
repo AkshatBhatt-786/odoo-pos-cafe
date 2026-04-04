@@ -1,58 +1,461 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Payment Confirmed{% endblock %}
+{% block title %}Payment Confirmed — Table {{ order.table.number }}{% endblock %}
 {% block body_class %}pos-confirm{% endblock %}
 {% block nav_class %}nav--pos{% endblock %}
 
 {% block nav_links %}
-  <a href="{% url 'pos:floor' %}" class="nav__link">Floor View</a>
+  <a href="{% url 'pos:floor' %}" class="nav__link">← Floor</a>
 {% endblock %}
 
 {% block extra_css %}
 <style>
+  /* ============================================================
+     THEME — mirrors order.html exactly
+     ============================================================ */
+  :root,
+  [data-theme="light"],
+  [data-theme="dark"] {
+    --bg:          #0A0B0E;
+    --surface:     #111318;
+    --surface2:    #181C23;
+    --surface3:    #1E2330;
+    --border:      #252D3D;
+    --border2:     #2F3A50;
+    --border3:     #C9A84C33;
+    --text:        #E8E2D5;
+    --text2:       #7A8499;
+    --text3:       #3A4255;
+    --gold:        #C9A84C;
+    --gold2:       #A8873A;
+    --gold-muted:  #C9A84C22;
+    --cyan:        #4FC3D4;
+    --success:     #2EAB7B;
+    --success-muted: #2EAB7B18;
+    --danger:      #D95757;
+    --warning:     #D4844A;
+    --panel-bg:    #0D0F14;
+    --panel-bg2:   #080A0D;
+    --panel-text:  #D4C9A8;
+    --panel-sub:   #4A5568;
+    --gold-gradient:    linear-gradient(90deg, #C9A84C 0%, #A8873A 100%);
+    --surface-gradient: linear-gradient(180deg, #111318 0%, #0A0B0E 100%);
+
+    --ink:        #E8E2D5;
+    --ink-soft:   #7A8499;
+    --sand:       #181C23;
+    --sand-light: #1E2330;
+    --sand-dark:  #252D3D;
+    --cream:      #111318;
+    --muted:      #7A8499;
+    --white:      #E8E2D5;
+    --reserved:   #1E2330;
+
+    --nav-height:   60px;
+    --font-display: 'DM Serif Display', serif;
+    --font-mono:    'DM Mono', monospace;
+    --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    cursor: none;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: none; border: none; background: none; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* ============================================================
+     CURSOR
+     ============================================================ */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.12s ease, opacity 0.2s, background 0.3s;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+    transition: width 0.2s var(--ease-out), height 0.2s var(--ease-out), opacity 0.2s;
+  }
+  body.cursor-hover .cursor-ring { width: 52px; height: 52px; opacity: 0.25; }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-height);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--gold); font-weight: 500;
+  }
+  .nav__links { display: flex; gap: 2.5rem; align-items: center; }
+  .nav__link {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text2); transition: color var(--transition-fast);
+  }
+  .nav__link:hover { color: var(--gold); }
+
+  .nav__table-badge { display: flex; align-items: center; gap: 0.6rem; }
+  .nav__table-num {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--bg); background: var(--gold-gradient);
+    padding: 0.3rem 0.75rem;
+  }
+
+  /* ============================================================
+     BUTTONS
+     ============================================================ */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid transparent;
+    transition: all var(--transition-base);
+    cursor: none; white-space: nowrap;
+  }
+  .btn--primary {
+    background: var(--gold-gradient);
+    color: var(--bg); border-color: var(--gold); font-weight: 500;
+  }
+  .btn--primary:hover {
+    opacity: 0.88; transform: translateY(-1px);
+    box-shadow: 0 6px 24px color-mix(in srgb, var(--gold) 28%, transparent);
+  }
+  .btn--outline {
+    background: transparent; color: var(--text2); border-color: var(--border2);
+  }
+  .btn--outline:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ============================================================
+     BACKGROUND RADIAL GLOW
+     ============================================================ */
+  .confirm-bg {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 55%, rgba(46,171,123,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 50% 55%, rgba(201,168,76,0.04) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+    animation: glowPulse 4s ease-in-out infinite alternate;
+  }
+  @keyframes glowPulse {
+    from { opacity: 0.7; }
+    to   { opacity: 1; }
+  }
+
+  /* ============================================================
+     CONFIRM PAGE LAYOUT
+     ============================================================ */
   .confirm-page {
     min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
     padding-top: var(--nav-height);
-    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    cursor: none;
   }
+
+  /* ============================================================
+     CONFIRM CARD
+     ============================================================ */
   .confirm-card {
-    background: var(--cream); border: 1px solid var(--sand-dark);
-    padding: 4rem; text-align: center; max-width: 440px; width: 90%;
-    animation: fadeUp 0.5s var(--ease-out);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    max-width: 460px; width: 90%;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.55s var(--ease-out) both;
   }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
-  .confirm-icon { font-size: 3rem; margin-bottom: 1.5rem; }
-  .confirm-title { font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem; }
-  .confirm-amount { font-family: var(--font-mono); font-size: 1.2rem; color: var(--success); margin-bottom: 0.5rem; }
-  .confirm-meta { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 2rem; }
-  .confirm-hint { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 2rem; }
-  .confirm-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Gold top bar */
+  .confirm-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold-gradient);
+  }
+
+  /* ── Card Header ── */
+  .confirm-card__header {
+    padding: 2.5rem 2.5rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Checkmark icon */
+  .confirm-icon-wrap {
+    width: 56px; height: 56px;
+    border: 1px solid var(--success);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    animation: iconReveal 0.5s var(--ease-out) 0.2s both;
+  }
+  @keyframes iconReveal {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: none; }
+  }
+  .confirm-icon-wrap::after {
+    content: '';
+    position: absolute; inset: -4px;
+    border: 1px solid rgba(46,171,123,0.15);
+  }
+  .confirm-icon {
+    font-size: 1.4rem; color: var(--success);
+    line-height: 1;
+  }
+
+  .confirm-title {
+    font-family: var(--font-display);
+    font-size: 1.85rem; line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    animation: fadeUp 0.5s var(--ease-out) 0.3s both;
+  }
+
+  .confirm-amount {
+    font-family: var(--font-mono);
+    font-size: 1.5rem; font-weight: 500;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    animation: fadeUp 0.5s var(--ease-out) 0.4s both;
+  }
+
+  /* ── Card Meta ── */
+  .confirm-card__meta {
+    padding: 1.25rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-bg);
+    display: flex; flex-direction: column; gap: 0.55rem;
+    animation: fadeUp 0.5s var(--ease-out) 0.45s both;
+  }
+
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .meta-row__label {
+    font-family: var(--font-mono); font-size: 0.54rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text3);
+  }
+  .meta-row__val {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.06em; color: var(--text2);
+  }
+  .meta-row__val--highlight { color: var(--text); }
+
+  /* ── Card Actions ── */
+  .confirm-card__actions {
+    padding: 1.5rem 2.5rem;
+    display: flex; gap: 0.65rem; flex-wrap: wrap;
+    animation: fadeUp 0.5s var(--ease-out) 0.55s both;
+  }
+  .confirm-card__actions .btn { flex: 1; justify-content: center; }
+
+  /* ── Countdown hint ── */
+  .confirm-hint {
+    padding: 0 2.5rem 1.5rem;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.54rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text3);
+    animation: fadeUp 0.5s var(--ease-out) 0.65s both;
+  }
+
+  /* Countdown ring */
+  .countdown-ring {
+    position: relative; width: 20px; height: 20px; flex-shrink: 0;
+  }
+  .countdown-ring svg {
+    transform: rotate(-90deg);
+    width: 20px; height: 20px;
+  }
+  .countdown-ring__bg { fill: none; stroke: var(--border2); stroke-width: 2; }
+  .countdown-ring__bar {
+    fill: none; stroke: var(--gold2); stroke-width: 2;
+    stroke-dasharray: 50.27;   /* 2π×8 */
+    stroke-dashoffset: 0;
+    stroke-linecap: butt;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .countdown-ring__num {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.48rem;
+    color: var(--text3); line-height: 1;
+  }
+
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="confirm-page" onclick="window.location='{% url 'pos:floor' %}'">
+
+<!-- ── Custom Cursor ── -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── Background glow ── -->
+<div class="confirm-bg"></div>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <a href="{% url 'pos:floor' %}" class="nav__logo">Cafe.POS</a>
+  <ul class="nav__links">
+    <a href="{% url 'pos:floor' %}" class="nav__link">← Floor</a>
+  </ul>
+  <div class="nav__table-badge">
+    <div class="nav__table-num">Table {{ order.table.number }}</div>
+  </div>
+</nav>
+
+<!-- ── Page ── -->
+<div class="confirm-page" id="confirm-page">
   <div class="confirm-card" onclick="event.stopPropagation()">
-    <div class="confirm-icon">✓</div>
-    <div class="confirm-title">Payment Confirmed</div>
-    <div class="confirm-amount">₹{{ order.grand_total }}</div>
-    <div class="confirm-meta">
-      Order #{{ order.pk }} · Table {{ order.table.number }} · {{ order.get_payment_method_display }}
+
+    <!-- Header -->
+    <div class="confirm-card__header">
+      <div class="confirm-icon-wrap">
+        <div class="confirm-icon">✓</div>
+      </div>
+      <div class="confirm-title">Payment Confirmed</div>
+      <div class="confirm-amount">₹{{ order.grand_total }}</div>
     </div>
-    <div class="confirm-actions">
+
+    <!-- Meta rows -->
+    <div class="confirm-card__meta">
+      <div class="meta-row">
+        <span class="meta-row__label">Order</span>
+        <span class="meta-row__val meta-row__val--highlight">#{{ order.pk }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-row__label">Table</span>
+        <span class="meta-row__val">{{ order.table.number }} · {{ order.table.floor.name }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-row__label">Method</span>
+        <span class="meta-row__val">{{ order.get_payment_method_display }}</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="confirm-card__actions">
       <a href="{% url 'pos:floor' %}" class="btn btn--primary">New Order</a>
       <a href="{% url 'pos:reports' %}" class="btn btn--outline">Reports</a>
     </div>
-    <div class="confirm-hint">Tap anywhere to return to floor</div>
+
+    <!-- Countdown hint -->
+    <div class="confirm-hint">
+      <div class="countdown-ring">
+        <svg viewBox="0 0 20 20">
+          <circle class="countdown-ring__bg" cx="10" cy="10" r="8"/>
+          <circle class="countdown-ring__bar" id="ring-bar" cx="10" cy="10" r="8"/>
+        </svg>
+        <div class="countdown-ring__num" id="ring-num">8</div>
+      </div>
+      <span>Returning to floor</span>
+    </div>
+
   </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Auto-redirect to floor after 8 seconds
-  setTimeout(() => { window.location = '{% url "pos:floor" %}'; }, 8000);
+  /* ── Custom Cursor ── */
+  (function () {
+    const dot  = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    if (!dot || !ring) return;
+    let rx = 0, ry = 0, mx = 0, my = 0;
+
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+    function tick() {
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      dot.style.left  = mx + 'px';
+      dot.style.top   = my + 'px';
+      ring.style.left = rx + 'px';
+      ring.style.top  = ry + 'px';
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    document.querySelectorAll('a, button, .btn').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+  })();
+
+  /* ── Countdown + auto-redirect ── */
+  (function () {
+    const TOTAL    = 8;
+    const CIRCUM   = 50.27; // 2π × 8
+    const bar      = document.getElementById('ring-bar');
+    const numEl    = document.getElementById('ring-num');
+    let   remaining = TOTAL;
+
+    function tick() {
+      remaining--;
+      if (numEl) numEl.textContent = remaining;
+      if (bar)   bar.style.strokeDashoffset = CIRCUM * (1 - remaining / TOTAL);
+      if (remaining <= 0) {
+        window.location = '{% url "pos:floor" %}';
+      } else {
+        setTimeout(tick, 1000);
+      }
+    }
+
+    // Initialise ring
+    if (bar) bar.style.strokeDashoffset = 0;
+    setTimeout(tick, 1000);
+
+    // Click anywhere on the page also navigates
+    document.getElementById('confirm-page').addEventListener('click', () => {
+      window.location = '{% url "pos:floor" %}';
+    });
+  })();
 </script>
 {% endblock %}
