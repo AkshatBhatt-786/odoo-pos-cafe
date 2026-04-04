@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
