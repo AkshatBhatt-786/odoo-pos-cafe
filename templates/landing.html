@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cafe | Point of Sale{% endblock %}
+{% block body_class %}landing{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+{% endblock %}
+
+{% block cursor %}
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+{% endblock %}
+
+{% block nav %}
+  <nav class="nav">
+    <a href="{% url 'landing' %}" class="nav__logo">Cafe.POS</a>
+    <ul class="nav__links" style="list-style:none;">
+      <li><a href="#features" class="nav__link">Features</a></li>
+      <li><a href="#flow" class="nav__link">Workflow</a></li>
+      <li><a href="#kitchen" class="nav__link">Kitchen</a></li>
+      <li><a href="#payments" class="nav__link">Payments</a></li>
+    </ul>
+    <div class="nav__right">
+      {% if user.is_authenticated %}
+        <a href="#" class="btn btn--primary">Open Session</a>
+      {% else %}
+        <a href="#" class="btn btn--primary">Open Session</a>
+      {% endif %}
+    </div>
+  </nav>
+{% endblock %}
+
+{% block content %}
+
+  <!-- ── HERO ─────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero__left">
+      <div class="label label--inline hero__tag">Point of Sale · Restaurant Intelligence</div>
+
+      <h1 class="hero__title">
+        The POS<br>
+        <em>your kitchen</em><br>
+        deserves.
+      </h1>
+
+      <p class="hero__sub">
+        Table management, kitchen display, and seamless payments — all in one elegant system built for the modern restaurant.
+      </p>
+
+      <div class="hero__actions">
+        {% if user.is_authenticated %}
+          <a href="#" class="btn btn--primary">Start Session</a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="btn btn--primary">Start Session</a>
+        {% endif %}
+        <a href="#features" class="btn btn--ghost">Explore features →</a>
+      </div>
+
+      <div class="hero__stats">
+        <div class="stat-item">
+          <span class="stat__num">12</span>
+          <span class="stat__label">Tables managed</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat__num">3×</span>
+          <span class="stat__label">Payment methods</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat__num">∞</span>
+          <span class="stat__label">Sessions tracked</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- POS Preview Mockup -->
+    <div class="hero__right">
+      <div class="pos-preview">
+        <div class="pos-preview__bar">
+          <div class="pos-preview__logo">Cafe.POS</div>
+          <div class="pos-preview__tabs">
+            <span class="pos-preview__tab pos-preview__tab--active">Floor View</span>
+            <span class="pos-preview__tab">Kitchen</span>
+            <span class="pos-preview__tab">Reports</span>
+          </div>
+          <div class="pos-preview__time">12:45 PM / STN.01</div>
+        </div>
+
+        <div class="pos-preview__body">
+          <div class="pos-preview__main">
+            <div class="pos-preview__floor-title">Floor View</div>
+            <div class="pos-preview__legend">
+              <span>01 / Available</span>
+              <span>02 / Occupied</span>
+              <span>03 / Reserved</span>
+            </div>
+            <div class="mini-table-grid">
+              <div class="mini-table-card mini-table-card--occupied">
+                <div class="mini-table-card__num">T-01</div>
+                <div class="mini-table-card__foot"><span>4 PAX</span><span>Rs. 142</span></div>
+              </div>
+              <div class="mini-table-card">
+                <div class="mini-table-card__num">T-02</div>
+                <div class="mini-table-card__foot"><span>2 PAX</span><span>AVAIL</span></div>
+              </div>
+              <div class="mini-table-card mini-table-card--occupied">
+                <div class="mini-table-card__num">T-03</div>
+                <div class="mini-table-card__foot"><span>6 PAX</span><span>Rs. 88</span></div>
+              </div>
+              <div class="mini-table-card mini-table-card--reserved">
+                <div class="mini-table-card__num">T-04</div>
+                <div class="mini-table-card__foot"><span>4 PAX</span><span>RSVD</span></div>
+              </div>
+              <div class="mini-table-card">
+                <div class="mini-table-card__num">T-05</div>
+                <div class="mini-table-card__foot"><span>2 PAX</span><span>AVAIL</span></div>
+              </div>
+              <div class="mini-table-card mini-table-card--occupied">
+                <div class="mini-table-card__num">T-06</div>
+                <div class="mini-table-card__foot"><span>4 PAX</span><span>Rs. 56</span></div>
+              </div>
+              <div class="mini-table-card">
+                <div class="mini-table-card__num">T-07</div>
+                <div class="mini-table-card__foot"><span>8 PAX</span><span>AVAIL</span></div>
+              </div>
+              <div class="mini-table-card mini-table-card--reserved">
+                <div class="mini-table-card__num">T-08</div>
+                <div class="mini-table-card__foot"><span>2 PAX</span><span>RSVD</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pos-preview__panel">
+            <div class="pos-preview__panel-label">Current Order</div>
+            <div class="pos-preview__panel-table">T-01</div>
+            <div class="pos-preview__line"><span>02 / Risotto</span><span>Rs. 52</span></div>
+            <div class="pos-preview__line"><span>01 / Branzino</span><span>Rs. 38</span></div>
+            <div class="pos-preview__line"><span>02 / Negroni</span><span>Rs. 32</span></div>
+            <div class="pos-preview__line"><span>01 / Truffle Fries</span><span>Rs. 14</span></div>
+            <div class="pos-preview__total"><span>TOTAL</span><span>Rs. 163</span></div>
+            <div class="pos-preview__btn">Complete →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MARQUEE ───────────────────────────────────────────── -->
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <span class="marquee-track__item">Floor View</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Kitchen Display</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">UPI QR Payments</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Session Reports</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Table Management</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Real-time KDS</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Multi-payment</span>
+      <span class="marquee-track__dot">·</span>
+      <!-- duplicate for seamless loop -->
+      <span class="marquee-track__item">Floor View</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Kitchen Display</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">UPI QR Payments</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Session Reports</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Table Management</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Real-time KDS</span>
+      <span class="marquee-track__dot">·</span>
+      <span class="marquee-track__item">Multi-payment</span>
+      <span class="marquee-track__dot">·</span>
+    </div>
+  </div>
+
+  <!-- ── FEATURES ──────────────────────────────────────────── -->
+  <section class="section" id="features">
+    <div class="label label--inline reveal">System Capabilities</div>
+
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-card__num">01</div>
+        <span class="feature-card__icon">⬛</span>
+        <div class="feature-card__title">Floor & Table<br>Management</div>
+        <p class="feature-card__desc">Visual floor plan with real-time table status. Available, occupied, and reserved at a glance. Click any table to begin an order instantly.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-card__num">02</div>
+        <span class="feature-card__icon">◈</span>
+        <div class="feature-card__title">Kitchen Display<br>System</div>
+        <p class="feature-card__desc">Orders flow directly to the kitchen the moment they're placed. Track tickets through To Cook → Preparing → Completed in real time.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-card__num">03</div>
+        <span class="feature-card__icon">▣</span>
+        <div class="feature-card__title">Multi-method<br>Payments</div>
+        <p class="feature-card__desc">Cash, Digital/Card, and UPI QR — all in one checkout screen. QR codes generated automatically from your saved UPI ID.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-card__num">04</div>
+        <span class="feature-card__icon">◎</span>
+        <div class="feature-card__title">Session<br>Reporting</div>
+        <p class="feature-card__desc">Full session history with sales breakdown, per-staff filters, product performance, and export to PDF or XLS.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-card__num">05</div>
+        <span class="feature-card__icon">⊞</span>
+        <div class="feature-card__title">Product<br>Catalogue</div>
+        <p class="feature-card__desc">Manage categories, products with variants, pricing, and taxes — all configurable from the backend without touching code.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-card__num">06</div>
+        <span class="feature-card__icon">◉</span>
+        <div class="feature-card__title">Customer<br>Display</div>
+        <p class="feature-card__desc">A dedicated customer-facing screen showing live order details and payment status — full transparency at checkout.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── WORKFLOW ───────────────────────────────────────────── -->
+  <section class="flow-section" id="flow">
+    <div class="label label--inline reveal">End-to-end Workflow</div>
+    <h2 class="flow-section__title reveal">
+      From table to<br><em>receipt</em>, seamlessly.
+    </h2>
+
+    <div class="flow-steps">
+      <div class="flow-step reveal">
+        <div class="flow-step__dot"></div>
+        <div class="flow-step__num">Step 01</div>
+        <div class="flow-step__name">Open Session</div>
+        <p class="flow-step__desc">Staff logs in and opens a POS session. The terminal is ready immediately.</p>
+      </div>
+      <div class="flow-step reveal">
+        <div class="flow-step__dot"></div>
+        <div class="flow-step__num">Step 02</div>
+        <div class="flow-step__name">Select Table</div>
+        <p class="flow-step__desc">Pick a table from the floor view. Order creation starts instantly.</p>
+      </div>
+      <div class="flow-step reveal">
+        <div class="flow-step__dot"></div>
+        <div class="flow-step__num">Step 03</div>
+        <div class="flow-step__name">Add Items</div>
+        <p class="flow-step__desc">Browse products by category, add to cart, adjust quantities with +/−.</p>
+      </div>
+      <div class="flow-step reveal">
+        <div class="flow-step__dot"></div>
+        <div class="flow-step__num">Step 04</div>
+        <div class="flow-step__name">Send to Kitchen</div>
+        <p class="flow-step__desc">Hit Send — the KDS receives the ticket instantly for preparation.</p>
+      </div>
+      <div class="flow-step reveal">
+        <div class="flow-step__dot"></div>
+        <div class="flow-step__num">Step 05</div>
+        <div class="flow-step__name">Complete Payment</div>
+        <p class="flow-step__desc">Choose Cash, Card, or UPI QR. Confirm and the table resets automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PAYMENTS ───────────────────────────────────────────── -->
+  <section class="payment-section" id="payments">
+    <div>
+      <div class="label label--inline reveal">Payment Methods</div>
+      <h2 class="payment-section__title reveal">
+        Every way your<br>guests want to<br><em>pay.</em>
+      </h2>
+      <p class="payment-section__desc reveal">
+        Cash, card, digital transfer, or a simple QR scan — Cafe.POS handles them all from a single checkout screen. UPI QR codes generate automatically from your saved UPI ID.
+      </p>
+      <div class="payment-methods reveal">
+        <div class="method-pill active">Cash</div>
+        <div class="method-pill">Digital / Card</div>
+        <div class="method-pill">UPI QR</div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <div class="qr-preview">
+        <div class="qr-preview__label">UPI / QR Payment</div>
+        <div class="qr-code" id="qrGrid"></div>
+        <div class="qr-preview__amount">Rs. 163.30</div>
+        <div class="qr-preview__sub">Scan with any UPI app</div>
+        <div class="qr-preview__btns">
+          <button class="qr-btn qr-btn--confirm">Confirmed</button>
+          <button class="qr-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── KITCHEN ────────────────────────────────────────────── -->
+  <section class="kitchen-section" id="kitchen">
+    <div class="kitchen-section__header">
+      <div>
+        <div class="label label--inline reveal">Kitchen Display System</div>
+        <h2 class="kitchen-section__title reveal">
+          Orders from POS<br>to kitchen, <em>instantly.</em>
+        </h2>
+      </div>
+    </div>
+
+    <div class="kds-board">
+      <div class="kds-column reveal">
+        <div class="kds-column__header kds-column__header--active">To Cook</div>
+        <div class="kds-ticket">
+          <div class="kds-ticket__header">
+            <div class="kds-ticket__num">Order #47</div>
+            <div class="kds-ticket__time">02:10 MIN</div>
+          </div>
+          <div class="kds-ticket__item"><span><span class="qty">02×</span>Margherita Pizza</span></div>
+          <div class="kds-ticket__item"><span><span class="qty">01×</span>Caesar Salad</span></div>
+          <div class="kds-ticket__item"><span><span class="qty">02×</span>Pasta Carbonara</span></div>
+        </div>
+        <div class="kds-ticket">
+          <div class="kds-ticket__header">
+            <div class="kds-ticket__num">Order #48</div>
+            <div class="kds-ticket__time">00:45 MIN</div>
+          </div>
+          <div class="kds-ticket__item"><span><span class="qty">01×</span>Grilled Salmon</span></div>
+          <div class="kds-ticket__item"><span><span class="qty">01×</span>Truffle Fries</span></div>
+        </div>
+      </div>
+
+      <div class="kds-column reveal">
+        <div class="kds-column__header kds-column__header--active">Preparing</div>
+        <div class="kds-ticket">
+          <div class="kds-ticket__header">
+            <div class="kds-ticket__num">Order #45</div>
+            <div class="kds-ticket__time">08:22 MIN</div>
+          </div>
+          <div class="kds-ticket__item kds-ticket__item--done"><span><span class="qty">02×</span>Espresso Glacé</span></div>
+          <div class="kds-ticket__item"><span><span class="qty">01×</span>Tiramisu</span></div>
+          <div class="kds-ticket__item kds-ticket__item--done"><span><span class="qty">01×</span>Sparkling Water</span></div>
+        </div>
+      </div>
+
+      <div class="kds-column reveal">
+        <div class="kds-column__header">Completed</div>
+        <div class="kds-ticket" style="opacity:0.5;">
+          <div class="kds-ticket__header">
+            <div class="kds-ticket__num">Order #43</div>
+            <div class="kds-ticket__time">15:30 MIN</div>
+          </div>
+          <div class="kds-ticket__item kds-ticket__item--done"><span><span class="qty">03×</span>Steak Frites</span></div>
+          <div class="kds-ticket__item kds-ticket__item--done"><span><span class="qty">02×</span>Roasted Branzino</span></div>
+          <div class="kds-ticket__item kds-ticket__item--done"><span><span class="qty">01×</span>Negroni</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ───────────────────────────────────────────────── -->
+  <section class="cta-section">
+    <h2 class="cta-section__title reveal">Ready to serve<br><em>better?</em></h2>
+    <p class="cta-section__sub reveal">
+      Set up your first session in minutes. No training required — your staff will feel at home immediately.
+    </p>
+    <div class="cta-section__actions reveal">
+      {% if user.is_authenticated %}
+        <a href="#" class="btn btn--primary">Open POS Session</a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn--primary">Open POS Session</a>
+        <a href="{% url 'accounts:signup' %}" class="btn btn--ghost">Create account →</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="site-footer__logo">Odoo.POS</div>
+    <div class="site-footer__note">Restaurant Point of Sale · Hackathon 2026</div>
+    <div class="site-footer__note">Django + Tailwind CSS</div>
+  </footer>
+
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/landing.js' %}"></script>
+{% endblock %}

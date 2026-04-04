@@ -1,0 +1,90 @@
+/* ============================================================
+   NAV.CSS — Top Navigation Bar
+   ============================================================ */
+
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-height);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  background: var(--sand);
+  border-bottom: 1px solid var(--sand-dark);
+}
+
+.nav__logo {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.nav__links {
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.nav__link {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--muted);
+  transition: color var(--transition-fast);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+
+.nav__link:hover,
+.nav__link.active {
+  color: var(--ink);
+}
+
+.nav__link.active {
+  border-color: var(--ink);
+}
+
+.nav__right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav__session-info {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nav__session-info span {
+  color: var(--ink);
+  margin-left: 0.25rem;
+}
+
+/* POS Terminal nav (full-screen mode) */
+.nav--pos {
+  background: var(--sand);
+  border-bottom: 1px solid var(--sand-dark);
+}
+
+.nav--dark {
+  background: var(--ink);
+  border-color: rgba(255,255,255,0.1);
+  color: var(--white);
+}
+
+.nav--dark .nav__logo { color: var(--white); }
+.nav--dark .nav__link { color: rgba(255,255,255,0.45); }
+.nav--dark .nav__link:hover,
+.nav--dark .nav__link.active { color: var(--white); }
+.nav--dark .nav__link.active { border-color: var(--white); }
