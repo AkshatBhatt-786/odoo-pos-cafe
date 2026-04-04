@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Self Order — Table {{ order.table.number }}{% endblock %}
+{% block body_class %}pos-selforder{% endblock %}
+{% block nav %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  body.pos-selforder { background: var(--sand); }
+  .self-page { min-height: 100vh; padding: 1.5rem 1rem 6rem; max-width: 500px; margin: 0 auto; }
+
+  .self-header { text-align: center; padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--sand-dark); margin-bottom: 1.5rem; }
+  .self-brand  { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .self-table  { font-family: var(--font-display); font-size: 2.5rem; }
+  .self-order  { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); }
+
+  .cat-label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin: 1.5rem 0 0.75rem; }
+
+  .product-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .product-item { display: flex; align-items: center; background: var(--cream); border: 1px solid var(--sand-dark); padding: 0.85rem 1rem; }
+  .product-item__info { flex: 1; }
+  .product-item__name  { font-size: 0.88rem; font-weight: 500; }
+  .product-item__price { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+  .add-btn { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: var(--white); border: none; padding: 0.5rem 0.85rem; cursor: pointer; transition: var(--transition-fast); }
+  .add-btn:hover { background: var(--ink-soft); }
+
+  /* Sticky order summary bar */
+  .order-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--ink); color: var(--white); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; z-index: 100; }
+  .order-bar__info { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .order-bar__total { font-family: var(--font-display); font-size: 1.25rem; }
+  .order-bar__items { color: rgba(255,255,255,0.45); font-size: 0.55rem; }
+
+  .sent-banner { background: var(--success); color: var(--white); text-align: center; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.75rem; margin-bottom: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="self-page">
+  <div class="self-header">
+    <div class="self-brand">Odoo.POS Café</div>
+    <div class="self-table">Table {{ order.table.number }}</div>
+    <div class="self-order">Order #{{ order.pk }}</div>
+  </div>
+
+  {% if order.status == 'sent' %}
+    <div class="sent-banner">✓ Your order has been sent to the kitchen</div>
+  {% endif %}
+
+  {% for cat in categories %}
+    {% if cat.products.all %}
+      <div class="cat-label">{{ cat.name }}</div>
+      <div class="product-list">
+        {% for product in cat.products.all %}
+          {% if product.is_available %}
+            <div class="product-item">
+              <div class="product-item__info">
+                <div class="product-item__name">{{ product.name }}</div>
+                <div class="product-item__price">₹{{ product.price }}</div>
+              </div>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="product_id" value="{{ product.pk }}">
+                <button type="submit" class="add-btn">Add +</button>
+              </form>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<!-- Sticky bar -->
+{% if lines %}
+<div class="order-bar">
+  <div class="order-bar__info">
+    <div class="order-bar__items">{{ lines|length }} item{{ lines|length|pluralize }}</div>
+    <div class="order-bar__total">₹{{ order.grand_total }}</div>
+  </div>
+  <a href="{% url 'pos:customer_display' order.pk %}" class="btn btn--sm btn--white">View Order</a>
+</div>
+{% endif %}
+{% endblock %}

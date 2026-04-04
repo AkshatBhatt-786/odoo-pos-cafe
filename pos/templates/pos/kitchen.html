@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Kitchen Display{% endblock %}
+{% block body_class %}pos-kitchen{% endblock %}
+{% block nav_class %}nav--dark{% endblock %}
+
+{% block nav_links %}
+  <a href="{% url 'pos:floor' %}" class="nav__link">POS Floor</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  body.pos-kitchen { background: var(--ink); color: var(--white); }
+  .kitchen-page { padding-top: var(--nav-height); min-height: 100vh; display: flex; flex-direction: column; }
+
+  .kitchen-header { padding: 1.25rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 2rem; }
+  .kitchen-clock { font-family: var(--font-mono); font-size: 1.5rem; color: var(--white); }
+  .kitchen-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+
+  .kitchen-board { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; flex: 1; }
+  .kitchen-col { border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; }
+  .kitchen-col:last-child { border-right: none; }
+
+  .col-header { padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 0.75rem; }
+  .col-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .col-dot--to-cook   { background: var(--to-cook); }
+  .col-dot--preparing { background: var(--preparing); }
+  .col-dot--completed { background: var(--completed); }
+  .col-title { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .col-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--white); margin-left: auto; }
+
+  .col-tickets { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; }
+
+  .ticket {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    padding: 1rem; cursor: pointer; transition: var(--transition-fast);
+  }
+  .ticket:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+  .ticket--to-cook   { border-left: 3px solid var(--to-cook); }
+  .ticket--preparing { border-left: 3px solid var(--preparing); }
+  .ticket--completed { border-left: 3px solid var(--completed); opacity: 0.6; }
+
+  .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+  .ticket-num { font-family: var(--font-mono); font-size: 0.85rem; color: var(--white); }
+  .ticket-table { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+  .ticket-time { font-family: var(--font-mono); font-size: 0.55rem; color: rgba(255,255,255,0.3); }
+
+  .ticket-items { display: flex; flex-direction: column; gap: 0.3rem; }
+  .ticket-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; padding: 0.2rem 0; }
+  .ticket-item.prepared { text-decoration: line-through; color: rgba(255,255,255,0.3); }
+  .ticket-item__qty { font-family: var(--font-mono); font-size: 0.65rem; color: rgba(255,255,255,0.5); min-width: 24px; }
+
+  .ticket-advance { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); }
+  .advance-btn { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); background: none; border: 1px solid rgba(255,255,255,0.12); padding: 0.4rem 0.8rem; cursor: pointer; transition: var(--transition-fast); }
+  .advance-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.4); }
+
+  .empty-col { padding: 2rem 1rem; text-align: center; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="kitchen-page">
+  <div class="kitchen-header">
+    <div>
+      <div class="kitchen-label">Kitchen Display</div>
+      <div class="kitchen-clock" id="kitchen-clock">--:--:--</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:0.75rem;align-items:center;">
+      <span style="font-family:var(--font-mono);font-size:0.6rem;color:rgba(255,255,255,0.35);letter-spacing:0.1em;text-transform:uppercase;">
+        {{ tickets|length }} active ticket{{ tickets|length|pluralize }}
+      </span>
+    </div>
+  </div>
+
+  <div class="kitchen-board">
+
+    <!-- TO COOK -->
+    <div class="kitchen-col">
+      <div class="col-header">
+        <span class="col-dot col-dot--to-cook"></span>
+        <span class="col-title">To Cook</span>
+        <span class="col-count">{{ tickets|length }}</span>
+      </div>
+      <div class="col-tickets">
+        {% for ticket in tickets %}{% if ticket.stage == 'to_cook' %}
+          <div class="ticket ticket--to-cook" id="ticket-{{ ticket.pk }}">
+            <div class="ticket-header">
+              <span class="ticket-num">#{{ ticket.order_id }}</span>
+              <span class="ticket-table">{{ ticket.order.table }}</span>
+              <span class="ticket-time">{{ ticket.created_at|timesince }} ago</span>
+            </div>
+            <div class="ticket-items">
+              {% for line in ticket.order.lines.all %}
+                <div class="ticket-item {% if line.is_prepared %}prepared{% endif %}"
+                     id="ti-line-{{ line.pk }}"
+                     onclick="toggleLine({{ line.pk }})">
+                  <span class="ticket-item__qty">{{ line.quantity }}×</span>
+                  {{ line.product.name }}
+                </div>
+              {% endfor %}
+            </div>
+            <div class="ticket-advance">
+              <button class="advance-btn" onclick="advanceTicket({{ ticket.pk }})">Move → Preparing</button>
+            </div>
+          </div>
+        {% endif %}{% endfor %}
+        {% if not tickets %}<div class="empty-col">No orders</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- PREPARING -->
+    <div class="kitchen-col">
+      <div class="col-header">
+        <span class="col-dot col-dot--preparing"></span>
+        <span class="col-title">Preparing</span>
+      </div>
+      <div class="col-tickets">
+        {% for ticket in tickets %}{% if ticket.stage == 'preparing' %}
+          <div class="ticket ticket--preparing" id="ticket-{{ ticket.pk }}">
+            <div class="ticket-header">
+              <span class="ticket-num">#{{ ticket.order_id }}</span>
+              <span class="ticket-table">{{ ticket.order.table }}</span>
+              <span class="ticket-time">{{ ticket.updated_at|timesince }} ago</span>
+            </div>
+            <div class="ticket-items">
+              {% for line in ticket.order.lines.all %}
+                <div class="ticket-item {% if line.is_prepared %}prepared{% endif %}"
+                     id="ti-line-{{ line.pk }}"
+                     onclick="toggleLine({{ line.pk }})">
+                  <span class="ticket-item__qty">{{ line.quantity }}×</span>
+                  {{ line.product.name }}
+                </div>
+              {% endfor %}
+            </div>
+            <div class="ticket-advance">
+              <button class="advance-btn" onclick="advanceTicket({{ ticket.pk }})">Move → Completed</button>
+            </div>
+          </div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+
+    <!-- COMPLETED -->
+    <div class="kitchen-col">
+      <div class="col-header">
+        <span class="col-dot col-dot--completed"></span>
+        <span class="col-title">Completed</span>
+      </div>
+      <div class="col-tickets" id="completed-col">
+        {% for ticket in completed %}
+          <div class="ticket ticket--completed">
+            <div class="ticket-header">
+              <span class="ticket-num">#{{ ticket.order_id }}</span>
+              <span class="ticket-table">{{ ticket.order.table }}</span>
+              <span class="ticket-time">{{ ticket.updated_at|timesince }} ago</span>
+            </div>
+            <div class="ticket-items">
+              {% for line in ticket.order.lines.all %}
+                <div class="ticket-item prepared">
+                  <span class="ticket-item__qty">{{ line.quantity }}×</span>
+                  {{ line.product.name }}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="empty-col">None yet</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('kitchen-clock').textContent =
+      now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+  updateClock(); setInterval(updateClock, 1000);
+
+  setInterval(() => location.reload(), 30000);
+
+  const CSRF = '{{ csrf_token }}';
+
+  function advanceTicket(id) {
+    fetch(`/pos/kitchen/ticket/${id}/advance/`, {
+      method: 'POST', headers: {'X-CSRFToken': CSRF}
+    }).then(() => location.reload());
+  }
+
+  function toggleLine(id) {
+    fetch(`/pos/kitchen/line/${id}/prepared/`, {
+      method: 'POST', headers: {'X-CSRFToken': CSRF}
+    }).then(r => r.json()).then(data => {
+      const el = document.getElementById('ti-line-' + id);
+      if (el) el.classList.toggle('prepared', data.prepared);
+    });
+  }
+</script>
+{% endblock %}

@@ -8,7 +8,7 @@ from .models import User
 def login_view(request):
     """User login view with custom template"""
     if request.user.is_authenticated:
-        return redirect('pos:dashboard')
+        return redirect('pos:floor')
     
     error = None
     
@@ -29,7 +29,7 @@ def login_view(request):
             messages.success(request, f'Welcome back, {username}!')
             
             # Redirect to next parameter or dashboard
-            next_url = request.GET.get('next', 'pos:dashboard')
+            next_url = request.GET.get('next', 'pos:floor')
             return redirect(next_url)
         else:
             error = 'Invalid username or password. Please try again.'
@@ -39,7 +39,7 @@ def login_view(request):
 def signup_view(request):
     """User registration view"""
     if request.user.is_authenticated:
-        return redirect('pos:dashboard')
+        return redirect('pos:floor')
     
     if request.method == 'POST':
         form = SignupForm(request.POST)
@@ -47,7 +47,7 @@ def signup_view(request):
             user = form.save()
             login(request, user)
             messages.success(request, f'Welcome {user.username}! Your account has been created.')
-            return redirect('pos:dashboard')
+            return redirect('pos:floor')
         else:
             for error in form.errors.values():
                 messages.error(request, error)

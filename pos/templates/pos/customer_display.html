@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Order #{{ order.pk }} — Customer Display{% endblock %}
+{% block body_class %}pos-customer{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  body.pos-customer { background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .customer-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); padding: 3rem; width: 100%; max-width: 480px; }
+  .customer-brand { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 2rem; }
+  .customer-table { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 0.25rem; }
+  .customer-order  { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 2rem; }
+
+  .customer-lines { border-top: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem; }
+  .customer-line { display: flex; justify-content: space-between; padding: 0.7rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.88rem; }
+  .customer-line__qty { font-family: var(--font-mono); font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-right: 0.75rem; }
+  .customer-line__price { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(255,255,255,0.5); }
+
+  .customer-total { display: flex; justify-content: space-between; font-family: var(--font-display); font-size: 1.75rem; margin-bottom: 2rem; }
+  .customer-status { text-align: center; padding: 0.75rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; }
+  .status--paid   { background: rgba(74,124,89,0.15); color: var(--completed); border: 1px solid rgba(74,124,89,0.3); }
+  .status--unpaid { background: rgba(139,58,58,0.1); color: #c97070; border: 1px solid rgba(139,58,58,0.25); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="customer-card">
+  <div class="customer-brand">Odoo.POS Café</div>
+  <div class="customer-table">{{ order.table }}</div>
+  <div class="customer-order">Order #{{ order.pk }}</div>
+
+  <div class="customer-lines">
+    {% for line in lines %}
+      <div class="customer-line">
+        <div><span class="customer-line__qty">{{ line.quantity }}×</span>{{ line.product.name }}</div>
+        <span class="customer-line__price">₹{{ line.line_total }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="customer-total">
+    <span>Total</span>
+    <span>₹{{ order.grand_total }}</span>
+  </div>
+
+  <div class="customer-status {% if order.status == 'paid' %}status--paid{% else %}status--unpaid{% endif %}">
+    {% if order.status == 'paid' %}✓ Payment Received — Thank You!{% else %}Awaiting Payment{% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Auto-refresh every 10 seconds so payment status updates live
+  setInterval(() => location.reload(), 10000);
+</script>
+{% endblock %}

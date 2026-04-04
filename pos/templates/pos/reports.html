@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports — Odoo.POS{% endblock %}
+{% block body_class %}pos-reports{% endblock %}
+{% block nav_class %}nav--pos{% endblock %}
+
+{% block nav_links %}
+  <a href="{% url 'pos:floor' %}"   class="nav__link">Floor View</a>
+  <a href="{% url 'pos:kitchen' %}" class="nav__link">Kitchen</a>
+  <a href="{% url 'pos:backend' %}" class="nav__link">Config</a>
+  <a href="{% url 'pos:reports' %}" class="nav__link active">Reports</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .reports-page { padding-top: calc(var(--nav-height) + 2.5rem); min-height: 100vh; padding-bottom: 4rem; }
+  .reports-wrap { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+  .page-title { font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.25rem; }
+  .page-sub   { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2.5rem; }
+
+  /* Filter bar */
+  .filter-bar { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.25rem 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 2rem; }
+  .filter-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .filter-label { font-family: var(--font-mono); font-size: 0.57rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+  .filter-bar .btn { align-self: flex-end; }
+
+  /* Period tabs */
+  .period-tabs { display: flex; gap: 0.4rem; }
+  .period-tab { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.45rem 0.85rem; background: var(--sand); border: 1px solid var(--sand-dark); cursor: pointer; color: var(--muted); text-decoration: none; transition: var(--transition-fast); }
+  .period-tab.active, .period-tab:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+  /* Stats */
+  .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 1.5rem; }
+  .stat-val   { font-family: var(--font-display); font-size: 2.2rem; line-height: 1; }
+  .stat-label { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 0.3rem; }
+
+  /* Orders table */
+  .section-title { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--sand-dark); display: flex; justify-content: space-between; align-items: center; }
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th { font-family: var(--font-mono); font-size: 0.57rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--sand-dark); }
+  .data-table td { padding: 0.65rem 0.75rem; font-size: 0.83rem; border-bottom: 1px solid var(--sand-dark); vertical-align: middle; }
+  .data-table tr:hover td { background: var(--cream); }
+  .mono { font-family: var(--font-mono); font-size: 0.72rem; }
+  .text-muted { color: var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-page">
+  <div class="reports-wrap">
+
+    <div class="page-title">Sales Reports</div>
+    <div class="page-sub">Filter by period, session, staff, or product</div>
+
+    <!-- Filters -->
+    <form method="get" action="{% url 'pos:reports' %}">
+      <div class="filter-bar">
+
+        <!-- Period -->
+        <div class="filter-group">
+          <span class="filter-label">Period</span>
+          <div class="period-tabs">
+            <a href="?period=today{% if selected_session %}&session_id={{ selected_session }}{% endif %}"
+               class="period-tab {% if period == 'today' %}active{% endif %}">Today</a>
+            <a href="?period=week{% if selected_session %}&session_id={{ selected_session }}{% endif %}"
+               class="period-tab {% if period == 'week' %}active{% endif %}">This Week</a>
+            <a href="?period=custom{% if selected_session %}&session_id={{ selected_session }}{% endif %}"
+               class="period-tab {% if period == 'custom' %}active{% endif %}">Custom</a>
+          </div>
+          <input type="hidden" name="period" value="{{ period }}">
+        </div>
+
+        <!-- Custom dates -->
+        {% if period == 'custom' %}
+          <div class="filter-group">
+            <label class="filter-label">From</label>
+            <input type="date" name="date_from" value="{{ date_from }}" class="input" style="width:auto;">
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">To</label>
+            <input type="date" name="date_to" value="{{ date_to }}" class="input" style="width:auto;">
+          </div>
+        {% endif %}
+
+        <!-- Session -->
+        <div class="filter-group">
+          <label class="filter-label">Session</label>
+          <select name="session_id" class="select" style="width:180px;">
+            <option value="">All sessions</option>
+            {% for s in sessions %}
+              <option value="{{ s.pk }}" {% if selected_session == s.pk|stringformat:"s" %}selected{% endif %}>
+                #{{ s.pk }} — {{ s.opened_at|date:"d M H:i" }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Responsible -->
+        <div class="filter-group">
+          <label class="filter-label">Staff</label>
+          <select name="responsible_id" class="select" style="width:160px;">
+            <option value="">All staff</option>
+            {% for u in users %}
+              <option value="{{ u.pk }}" {% if selected_responsible == u.pk|stringformat:"s" %}selected{% endif %}>
+                {{ u.get_full_name|default:u.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Product -->
+        <div class="filter-group">
+          <label class="filter-label">Product</label>
+          <select name="product_id" class="select" style="width:160px;">
+            <option value="">All products</option>
+            {% for p in products %}
+              <option value="{{ p.pk }}" {% if selected_product == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--sm">Apply</button>
+        <a href="{% url 'pos:reports' %}" class="btn btn--outline btn--sm">Reset</a>
+      </div>
+    </form>
+
+    <!-- Summary stats -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-val">₹{{ total_revenue|floatformat:2 }}</div>
+        <div class="stat-label">Total Revenue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">{{ total_orders }}</div>
+        <div class="stat-label">Orders Paid</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">
+          {% if total_orders %}
+            ₹{% widthratio total_revenue total_orders 1 %}
+          {% else %}—{% endif %}
+        </div>
+        <div class="stat-label">Avg Order Value</div>
+      </div>
+    </div>
+
+    <!-- Orders list -->
+    <div class="section-title">
+      <span>Recent Orders</span>
+      <span style="color:var(--muted);">Showing up to 50 results</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Table</th>
+          <th>Staff</th>
+          <th>Payment</th>
+          <th>Total</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td class="mono">#{{ order.pk }}</td>
+            <td>{{ order.table|default:"—" }}</td>
+            <td class="text-muted" style="font-size:0.78rem;">{{ order.session.user.get_full_name|default:order.session.user.username|default:"—" }}</td>
+            <td>
+              <span class="badge {% if order.payment_method == 'cash' %}badge--available{% elif order.payment_method == 'upi' %}badge--occupied{% else %}badge--reserved{% endif %}">
+                {{ order.get_payment_method_display }}
+              </span>
+            </td>
+            <td class="mono">₹{{ order.grand_total }}</td>
+            <td class="mono text-muted" style="font-size:0.65rem;">{{ order.updated_at|date:"d M y, H:i" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="color:var(--muted);font-family:var(--font-mono);font-size:0.7rem;padding:2rem 0.75rem;text-align:center;">
+              No paid orders match these filters.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+{% endblock %}

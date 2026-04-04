@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Payment — Table {{ order.table.number }}{% endblock %}
+{% block body_class %}pos-payment{% endblock %}
+{% block nav_class %}nav--pos{% endblock %}
+
+{% block nav_links %}
+  <a href="{% url 'pos:floor' %}" class="nav__link">← Floor</a>
+  <a href="{% url 'pos:order' order.table_id %}" class="nav__link">← Order</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .payment-page { padding-top: calc(var(--nav-height) + 3rem); min-height: 100vh; display: flex; justify-content: center; }
+  .payment-wrap { width: 100%; max-width: 860px; padding: 0 2rem 4rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+
+  /* Order summary */
+  .summary-card { background: var(--cream); border: 1px solid var(--sand-dark); padding: 2rem; }
+  .summary-title { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.25rem; }
+  .summary-line { display: flex; justify-content: space-between; align-items: baseline; padding: 0.45rem 0; border-bottom: 1px solid var(--sand-dark); font-size: 0.85rem; }
+  .summary-line__name { flex: 1; }
+  .summary-line__qty  { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); margin: 0 0.75rem; }
+  .summary-line__price { font-family: var(--font-mono); font-size: 0.7rem; }
+  .summary-totals { margin-top: 1rem; }
+  .summary-row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); margin-bottom: 0.3rem; }
+  .summary-row--grand { font-size: 1.1rem; color: var(--ink); font-weight: 600; border-top: 1px solid var(--sand-dark); padding-top: 0.6rem; margin-top: 0.6rem; font-family: var(--font-display); }
+
+  /* Payment methods */
+  .methods-card { background: var(--sand-light); border: 1px solid var(--sand-dark); padding: 2rem; }
+  .methods-title { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.25rem; }
+  .method-btn {
+    width: 100%; padding: 1rem 1.25rem; margin-bottom: 0.6rem;
+    background: var(--cream); border: 1px solid var(--sand-dark);
+    text-align: left; cursor: pointer; display: flex; align-items: center;
+    justify-content: space-between; transition: var(--transition-fast); font-family: var(--font-body);
+  }
+  .method-btn:hover  { background: var(--sand); border-color: var(--ink); }
+  .method-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .method-btn__name  { font-size: 0.88rem; font-weight: 500; }
+  .method-btn__icon  { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .method-btn.active .method-btn__icon { color: rgba(255,255,255,0.5); }
+
+  /* QR overlay */
+  .qr-overlay { display: none; position: fixed; inset: 0; background: rgba(26,26,24,0.6); z-index: 300; align-items: center; justify-content: center; }
+  .qr-overlay.active { display: flex; }
+  .qr-box { background: var(--cream); border: 1px solid var(--sand-dark); padding: 3rem; text-align: center; max-width: 380px; width: 90%; }
+  .qr-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+  .qr-amount { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 1.5rem; }
+  .qr-img { width: 200px; height: 200px; margin: 0 auto 1.5rem; border: 1px solid var(--sand-dark); background: var(--white); display: flex; align-items: center; justify-content: center; }
+  .qr-img img { width: 100%; height: 100%; }
+  .qr-upi { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); margin-bottom: 1.5rem; }
+  .qr-actions { display: flex; gap: 0.75rem; }
+
+  .confirm-btn { display: none; margin-top: 1rem; }
+  .confirm-btn.show { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-page">
+  <div class="payment-wrap">
+
+    <!-- Order summary -->
+    <div class="summary-card">
+      <div class="summary-title">Order #{{ order.pk }} · Table {{ order.table.number }}</div>
+      {% for line in lines %}
+        <div class="summary-line">
+          <span class="summary-line__name">{{ line.product.name }}</span>
+          <span class="summary-line__qty">× {{ line.quantity }}</span>
+          <span class="summary-line__price">₹{{ line.line_total }}</span>
+        </div>
+      {% endfor %}
+      <div class="summary-totals">
+        <div class="summary-row"><span>Subtotal</span><span>₹{{ order.subtotal }}</span></div>
+        <div class="summary-row"><span>Tax</span><span>₹{{ order.tax_total }}</span></div>
+        <div class="summary-row summary-row--grand"><span>Total</span><span>₹{{ order.grand_total }}</span></div>
+      </div>
+    </div>
+
+    <!-- Payment methods -->
+    <div class="methods-card">
+      <div class="methods-title">Select Payment Method</div>
+
+      {% for pm in payment_methods %}
+        <button class="method-btn" data-method="{{ pm.type }}" onclick="selectMethod('{{ pm.type }}')">
+          <span class="method-btn__name">{{ pm.get_type_display }}</span>
+          <span class="method-btn__icon">
+            {% if pm.type == 'cash' %}💵{% elif pm.type == 'digital' %}💳{% else %}📱{% endif %}
+          </span>
+        </button>
+      {% endfor %}
+
+      <!-- Hidden form submitted after method selection (non-UPI) -->
+      <form method="post" action="{% url 'pos:process_payment' order.pk %}" id="payment-form">
+        {% csrf_token %}
+        <input type="hidden" name="method" id="method-input" value="">
+        <button type="submit" class="btn btn--primary btn--full confirm-btn" id="confirm-btn">
+          Confirm Payment →
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- UPI QR overlay -->
+<div class="qr-overlay" id="qr-overlay">
+  <div class="qr-box">
+    <div class="qr-label">UPI QR Payment</div>
+    <div class="qr-amount">₹{{ order.grand_total }}</div>
+    <div class="qr-img">
+      {% if upi_method and upi_method.upi_id %}
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa={{ upi_method.upi_id }}&am={{ order.grand_total }}&tn=OdooPOS"
+             alt="UPI QR" />
+      {% else %}
+        <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);padding:1rem;">QR unavailable<br>No UPI ID configured</span>
+      {% endif %}
+    </div>
+    {% if upi_method %}<div class="qr-upi">{{ upi_method.upi_id }}</div>{% endif %}
+    <div class="qr-actions">
+      <form method="post" action="{% url 'pos:process_payment' order.pk %}" style="flex:1">
+        {% csrf_token %}
+        <input type="hidden" name="method" value="upi">
+        <button type="submit" class="btn btn--primary btn--full">Confirmed ✓</button>
+      </form>
+      <button class="btn btn--outline" onclick="closeQR()" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function selectMethod(method) {
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-method="${method}"]`).classList.add('active');
+
+    if (method === 'upi') {
+      document.getElementById('qr-overlay').classList.add('active');
+      return;
+    }
+    document.getElementById('method-input').value = method;
+    document.getElementById('confirm-btn').classList.add('show');
+  }
+
+  function closeQR() {
+    document.getElementById('qr-overlay').classList.remove('active');
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('confirm-btn').classList.remove('show');
+  }
+</script>
+{% endblock %}
