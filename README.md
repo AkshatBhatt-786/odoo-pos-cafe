@@ -15,7 +15,7 @@
 
 ## 📋 Problem Statement
 
-Modern cafes and small restaurants often struggle with fragmented operations — orders get lost between front-of-house and kitchen, payment reconciliation at shift-end is manual and error-prone, and customer wait times increase due to miscommunication. Off-the-shelf POS solutions like Odoo are expensive, bloated, and require heavy configuration.
+Modern cafes and small restaurants often struggle with fragmented operations — orders get lost between front-of-house and kitchen, payment reconciliation at shift-end is manual and error-prone, and customer wait times increase due to miscommunication. Off-the-shelf POS solutions are bloated, and require heavy configuration.
 
 **Odoo POS Cafe** solves this by providing a lightweight, purpose-built POS web application that mirrors the core workflows of enterprise restaurant software, but is deployable on any machine with Python — no licensing fees, no heavy setup.
 
