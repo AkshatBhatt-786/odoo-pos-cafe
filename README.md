@@ -1,3 +1,6 @@
+# Team No : 35
+# video link : https://drive.google.com/file/d/1SPDwTM-CrdAwxOJwW1Irwa7ZN90DLMcc/view
+
 # ☕ Odoo POS Cafe
 
 > A full-featured, web-based Point-of-Sale system built with Django — designed specifically for cafes and restaurants. Handles everything from table management and kitchen display to self-ordering via QR codes and sales reporting.
